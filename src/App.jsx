@@ -9,6 +9,7 @@ import LeaderDashboard from "./pages/LeaderDashboard";
 import MemberDashboard from "./pages/MemberDashboard";
 import ClubDetail from "./pages/ClubDetail";
 import AddInterview from "./pages/AddInterview";
+import LeaderAddInterview from "./pages/LeaderAddInterview";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/leader" element={<LeaderDashboard />} />
         <Route path="/member" element={<MemberDashboard />} />
         <Route path="/admin/interview/add" element={<AddInterview />} />
+        <Route path="/leader/interview/add" element={<LeaderAddInterview />} />
       </Routes>
     </Router>
   );
