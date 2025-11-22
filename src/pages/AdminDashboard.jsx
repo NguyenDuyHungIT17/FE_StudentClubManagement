@@ -70,10 +70,22 @@ const AdminDashboard = () => {
 
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
- 
+  // 1. Thêm state cho Club Members (sau phần Email states)
+  const [clubMembers, setClubMembers] = useState([]); // danh sách thành viên cho CLB được chọn
+  const [selectedMemberClubId, setSelectedMemberClubId] = useState(""); // CLB đang chọn để quản lý thành viên
+  const [memberLoading, setMemberLoading] = useState(false);
+  const [showMemberModal, setShowMemberModal] = useState(false);
+  const [editingMember, setEditingMember] = useState(null); // clubMemberId khi edit
+  const [memberForm, setMemberForm] = useState({
+    userId: "",
+    memberRole: "member",
+  });
+  const [viewingMember, setViewingMember] = useState(null);
+  const [showViewMemberModal, setShowViewMemberModal] = useState(false);
+
   // Filter functions
-  const filteredUsers = userFilterRole === "all" 
-    ? users 
+  const filteredUsers = userFilterRole === "all"
+    ? users
     : users.filter(user => user.role === userFilterRole);
 
   const filteredInterviews = interviewFilterResult === "all"
@@ -90,6 +102,12 @@ const AdminDashboard = () => {
     }
     // eslint-disable-next-line
   }, [activeTab, selectedClubId]);
+  useEffect(() => {
+    if (activeTab === "members" && selectedMemberClubId) {
+      fetchClubMembers(selectedMemberClubId);
+    }
+    // eslint-disable-next-line
+  }, [activeTab, selectedMemberClubId]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -140,6 +158,22 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchClubMembers = async (clubId) => {
+    if (!clubId) return;
+    setMemberLoading(true);
+    try {
+      const res = await fetch(`https://localhost:7251/api/ClubMembers/club/${clubId}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+      if (!res.ok) throw new Error("Lỗi khi lấy danh sách thành viên");
+      const data = await res.json();
+      setClubMembers(data || []);
+    } catch (err) {
+      alert(err.message || "Lỗi khi lấy thành viên");
+    } finally {
+      setMemberLoading(false);
+    }
+  };
   // View User Details
   const handleViewUser = async (userId) => {
     try {
@@ -188,7 +222,7 @@ const AdminDashboard = () => {
   // Send Email for Pass/Fail
   const handleSendEmail = async (resultType) => {
     if (!window.confirm(`Bạn có chắc chắn muốn gửi email cho các bạn ${resultType}?`)) return;
-    
+
     setEmailSending(true);
     try {
       const res = await fetch(
@@ -216,7 +250,7 @@ const AdminDashboard = () => {
       } else {
         const responseText = await res.text();
         let message = "Gửi email thành công!";
-        
+
         try {
           const jsonData = JSON.parse(responseText);
           message = jsonData.message || jsonData || "Gửi email thành công!";
@@ -500,6 +534,133 @@ const AdminDashboard = () => {
     } catch (err) {
       alert(err.message);
     }
+  };
+
+  const handleAddMember = () => {
+    if (!selectedMemberClubId) {
+      alert("Vui lòng chọn câu lạc bộ trước khi thêm thành viên");
+      return;
+    }
+    setEditingMember(null);
+    setMemberForm({ userId: "", memberRole: "member" });
+    setShowMemberModal(true);
+  };
+
+  const handleEditMember = async (member) => {
+    // Fetch chi tiết member từ API để lấy đủ info (userId, memberRole, joinAt)
+    try {
+      const res = await fetch(`https://localhost:7251/api/ClubMembers/${member.clubMemberId}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+      if (!res.ok) throw new Error("Lỗi khi lấy thông tin thành viên");
+      const fullMemberData = await res.json();
+
+      setEditingMember(member.clubMemberId);
+      setMemberForm({
+        userId: fullMemberData.userId ? String(fullMemberData.userId) : "",
+        memberRole: fullMemberData.memberRole || "member",
+      });
+      setShowMemberModal(true);
+    } catch (err) {
+      alert(err.message || "Lỗi khi lấy chi tiết thành viên");
+    }
+  };
+
+  const handleDeleteMember = async (clubMemberId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa thành viên này?")) return;
+    try {
+      const res = await fetch(`https://localhost:7251/api/ClubMembers/${clubMemberId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Lỗi khi xóa thành viên");
+      }
+      alert("Xóa thành công!");
+      fetchClubMembers(selectedMemberClubId);
+    } catch (err) {
+      alert(err.message || "Lỗi khi xóa thành viên");
+    }
+  };
+
+  const handleSaveMember = async () => {
+    try {
+      if (!memberForm.userId) {
+        alert("Vui lòng chọn người dùng");
+        return;
+      }
+
+      const method = editingMember ? "PUT" : "POST";
+      const url = editingMember
+        ? `https://localhost:7251/api/ClubMembers/${editingMember}`
+        : "https://localhost:7251/api/ClubMembers";
+
+      // Khi ADD: cần joinAt = thời gian hiện tại
+      // Khi UPDATE: lấy joinAt từ member cũ (không thay đổi)
+      let joinAtValue = new Date().toISOString();
+      if (editingMember && clubMembers.length > 0) {
+        const existingMember = clubMembers.find(m => m.clubMemberId === editingMember);
+        if (existingMember && existingMember.joinAt) {
+          joinAtValue = existingMember.joinAt; // ✅ Giữ nguyên joinAt cũ
+        }
+      }
+
+      const payload = {
+        clubId: parseInt(selectedMemberClubId, 10),
+        userId: parseInt(memberForm.userId, 10),
+        memberRole: memberForm.memberRole,
+        joinAt: joinAtValue,
+      };
+
+      const res = await fetch(url, {
+        method,
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        let errText = await res.text();
+        try {
+          const json = JSON.parse(errText);
+          errText = json?.message || errText;
+        } catch { }
+        throw new Error(errText || "Lỗi khi lưu thành viên");
+      }
+
+      alert(editingMember ? "Cập nhật thành viên thành công!" : "Thêm thành viên thành công!");
+      setShowMemberModal(false);
+      setEditingMember(null);
+      setMemberForm({ userId: "", memberRole: "member" });
+      fetchClubMembers(selectedMemberClubId);
+    } catch (err) {
+      alert(err.message || "Lỗi khi lưu thành viên");
+    }
+  };
+  const handleViewMember = async (clubMember) => {
+    // Nếu đã có đủ dữ liệu từ list thì show luôn, nếu cần chi tiết gọi GET /api/ClubMembers/{id}
+    if (clubMember.userEmail || clubMember.userId) {
+      setViewingMember(clubMember);
+      setShowViewMemberModal(true);
+      return;
+    }
+    try {
+      const res = await fetch(`https://localhost:7251/api/ClubMembers/${clubMember.clubMemberId}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+      if (!res.ok) throw new Error("Lỗi khi lấy thông tin thành viên");
+      const data = await res.json();
+      setViewingMember(data);
+      setShowViewMemberModal(true);
+    } catch (err) {
+      alert(err.message || "Lỗi khi lấy chi tiết thành viên");
+    }
+  };
+
+  // Hàm lấy danh sách user còn trống (chưa là thành viên)
+  const getAvailableUsers = () => {
+    const memberUserIds = clubMembers.map((m) => m.userId);
+    return users.filter((u) => !memberUserIds.includes(u.userId));
   };
 
   // UI styles
@@ -946,6 +1107,12 @@ const AdminDashboard = () => {
             <Layers /> Câu lạc bộ
           </button>
           <button
+            style={styles.navBtn(activeTab === "members")}
+            onClick={() => setActiveTab("members")}
+          >
+            <Users /> Thành viên
+          </button>
+          <button
             style={styles.navBtn(activeTab === "interviews")}
             onClick={() => setActiveTab("interviews")}
           >
@@ -969,7 +1136,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </div>
-            
+
             <div style={styles.filterRow}>
               <span style={styles.filterLabel}>Lọc theo vai trò:</span>
               <select
@@ -1371,6 +1538,217 @@ const AdminDashboard = () => {
           </>
         )}
 
+        {/* MEMBERS */}
+        {activeTab === "members" && (
+          <>
+            <div style={styles.card}>
+              <div style={styles.cardIcon}>
+                <Users size={28} />
+              </div>
+              <div style={styles.cardContent}>
+                <div style={styles.cardTitle}>Quản lý thành viên CLB</div>
+                <div style={styles.cardDesc}>
+                  Thêm / sửa / xóa thành viên theo câu lạc bộ (theo API backend).
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.filterRow}>
+              <span style={styles.filterLabel}>Chọn CLB:</span>
+              <select
+                id="selectMemberClub"
+                name="selectMemberClub"
+                style={styles.select}
+                value={selectedMemberClubId}
+                onChange={(e) => {
+                  setSelectedMemberClubId(e.target.value);
+                  setClubMembers([]); // reset list khi đổi CLB
+                }}
+              >
+                <option value="">-- Chọn CLB --</option>
+                {clubs.map((club) => (
+                  <option key={club.clubId} value={club.clubId}>
+                    {club.clubName}
+                  </option>
+                ))}
+              </select>
+
+              <button style={styles.addButton} onClick={handleAddMember}>
+                <Plus size={18} /> Thêm thành viên
+              </button>
+            </div>
+
+            <div style={styles.tableWrap}>
+              {memberLoading ? (
+                <p style={{ padding: 24 }}>Đang tải...</p>
+              ) : clubMembers.length === 0 ? (
+                <p style={{ padding: 24, textAlign: "center", color: "#999" }}>
+                  Không có thành viên nào trong CLB này
+                </p>
+              ) : (
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>ID</th>
+                      <th style={styles.th}>Tên thành viên</th>
+                      <th style={styles.th}>Vai trò</th>
+                      <th style={styles.th}>Ngày tham gia</th>
+                      <th style={styles.th}>Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clubMembers.map((member) => (
+                      <tr key={member.clubMemberId}>
+                        <td style={styles.td}>{member.clubMemberId}</td>
+                        <td style={styles.td}>{member.userName}</td>
+                        <td style={styles.td}>
+                          <span
+                            style={{
+                              padding: "4px 8px",
+                              borderRadius: "6px",
+                              fontWeight: "bold",
+                              fontSize: "12px",
+                              backgroundColor:
+                                member.memberRole === "leader" ? "#dbeafe" : "#fef3c7",
+                              color:
+                                member.memberRole === "leader" ? "#1e40af" : "#92400e",
+                            }}
+                          >
+                            {member.memberRole === "leader" ? "👑 Leader" : "👤 Member"}
+                          </span>
+                        </td>
+                        <td style={styles.td}>
+                          {member.joinAt ? new Date(member.joinAt).toLocaleString("vi-VN") : ""}
+                        </td>
+                        <td style={styles.td}>
+                          <button
+                            style={styles.actionButton("#2563eb")}
+                            onClick={() => handleViewMember(member)}
+                            title="Xem chi tiết"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
+                            style={styles.actionButton(ORANGE_DARK)}
+                            onClick={() => handleEditMember(member)}
+                            title="Sửa"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            style={styles.actionButton("#ef4444")}
+                            onClick={() => handleDeleteMember(member.clubMemberId)}
+                            title="Xóa"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Member Modal */}
+            {showMemberModal && (
+              <div style={styles.modalOverlay}>
+                <div style={styles.modal}>
+                  <button
+                    style={styles.closeButton}
+                    onClick={() => {
+                      setShowMemberModal(false);
+                      setEditingMember(null);
+                    }}
+                  >
+                    <X />
+                  </button>
+                  <div style={styles.modalTitle}>
+                    {editingMember ? "Sửa thành viên" : "Thêm thành viên"}
+                  </div>
+
+                  <label style={styles.modalLabel}>Chọn người dùng</label>
+                  <select
+                    id="userId"
+                    name="userId"
+                    style={styles.select}
+                    value={memberForm.userId}
+                    onChange={(e) => setMemberForm({ ...memberForm, userId: e.target.value })}
+                  >
+                    <option value="">-- Chọn người dùng --</option>
+                    {/* nếu đang edit cho phép chọn tất cả user, khi add chỉ show user chưa là member */}
+                    {(editingMember ? users : getAvailableUsers()).map((u) => (
+                      <option key={u.userId} value={u.userId}>
+                        {u.fullName} ({u.email})
+                      </option>
+                    ))}
+                  </select>
+
+                  <label style={styles.modalLabel}>Vai trò thành viên</label>
+                  <select
+                    id="memberRole"
+                    name="memberRole"
+                    style={styles.select}
+                    value={memberForm.memberRole}
+                    onChange={(e) => setMemberForm({ ...memberForm, memberRole: e.target.value })}
+                  >
+                    <option value="member">Member</option>
+                    <option value="leader">Leader</option>
+                  </select>
+
+                  <button style={styles.saveButton} onClick={handleSaveMember}>
+                    {editingMember ? "Cập nhật" : "Thêm mới"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* View Member Modal */}
+            {showViewMemberModal && viewingMember && (
+              <div style={styles.modalOverlay}>
+                <div style={styles.viewModal}>
+                  <button
+                    style={styles.closeButton}
+                    onClick={() => setShowViewMemberModal(false)}
+                  >
+                    <X />
+                  </button>
+                  <div style={styles.modalTitle}>Chi tiết thành viên CLB</div>
+
+                  <div style={styles.viewItem}>
+                    <div style={styles.viewLabel}>ID thành viên</div>
+                    <div style={styles.viewValue}>{viewingMember.clubMemberId}</div>
+                  </div>
+
+                  <div style={styles.viewItem}>
+                    <div style={styles.viewLabel}>Tên thành viên</div>
+                    <div style={styles.viewValue}>{viewingMember.userName}</div>
+                  </div>
+
+                  {viewingMember.userEmail && (
+                    <div style={styles.viewItem}>
+                      <div style={styles.viewLabel}>Email</div>
+                      <div style={styles.viewValue}>{viewingMember.userEmail}</div>
+                    </div>
+                  )}
+
+                  <div style={styles.viewItem}>
+                    <div style={styles.viewLabel}>Vai trò</div>
+                    <div style={styles.viewValue}>{viewingMember.memberRole}</div>
+                  </div>
+
+                  <div style={styles.viewItem}>
+                    <div style={styles.viewLabel}>Ngày tham gia</div>
+                    <div style={styles.viewValue}>
+                      {viewingMember.joinAt ? new Date(viewingMember.joinAt).toLocaleString("vi-VN") : ""}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
         {/* INTERVIEWS */}
         {activeTab === "interviews" && (
           <>
@@ -1461,18 +1839,18 @@ const AdminDashboard = () => {
                             borderRadius: "6px",
                             fontWeight: "bold",
                             fontSize: "13px",
-                            backgroundColor: 
+                            backgroundColor:
                               iv.result === "Pass" ? "#d1fae5" :
-                              iv.result === "Fail" ? "#fee2e2" :
-                              "#fef3c7",
+                                iv.result === "Fail" ? "#fee2e2" :
+                                  "#fef3c7",
                             color:
                               iv.result === "Pass" ? "#065f46" :
-                              iv.result === "Fail" ? "#7f1d1d" :
-                              "#92400e"
+                                iv.result === "Fail" ? "#7f1d1d" :
+                                  "#92400e"
                           }}>
                             {iv.result === "Pass" ? "✓ Pass" :
-                             iv.result === "Fail" ? "✗ Fail" :
-                             "⏳ Pending"}
+                              iv.result === "Fail" ? "✗ Fail" :
+                                "⏳ Pending"}
                           </span>
                         </td>
                         <td style={styles.td}>
@@ -1691,7 +2069,7 @@ const AdminDashboard = () => {
                       <AlertCircle size={64} />
                     )}
                   </div>
-                  
+
                   <div style={styles.resultTitle(emailResult.success)}>
                     {emailResult.success ? "Thành công! ✓" : "Có lỗi xảy ra! ✗"}
                   </div>
