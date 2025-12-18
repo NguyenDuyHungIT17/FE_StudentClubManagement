@@ -638,7 +638,6 @@ const AdminDashboard = () => {
     }
   };
   const handleViewMember = async (clubMember) => {
-    // Nếu đã có đủ dữ liệu từ list thì show luôn, nếu cần chi tiết gọi GET /api/ClubMembers/{id}
     if (clubMember.userEmail || clubMember.userId) {
       setViewingMember(clubMember);
       setShowViewMemberModal(true);
