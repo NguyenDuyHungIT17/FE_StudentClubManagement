@@ -1,0 +1,50 @@
+/* Scrollbar styling */
+.chat-widget-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-widget-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-widget-panel::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.chat-widget-panel::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Chat button hover effect */
+.chat-widget-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.6);
+}
+
+/* Guest chat button */
+.guest-chat-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.6);
+}

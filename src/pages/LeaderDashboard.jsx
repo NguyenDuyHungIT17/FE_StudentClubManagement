@@ -2,19 +2,26 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 
-import Header from "../components/dashboard/Header";
+// Components
+import LeaderChatPanel from "../components/chat/LeaderChatPanel";
+import Header from "../components/dashboard/Header"; // Hoặc TopHeader nếu bạn đổi tên
 import StatCard from "../components/dashboard/StatCard";
-import Button from "../components/common/Button";
-import UserTable from "../components/tables/UserTable";
-import ClubTable from "../components/tables/ClubTable";
-import InterviewTable from "../components/tables/InterviewTable";
-import UserModal from "../components/modals/UserModal";
-import ClubModal from "../components/modals/ClubModal";
+import Button from "../components/common/Button"; // Kiểm tra xem file này có tồn tại không
 
-import { useUsers } from "../hooks/useUsers";
-import { useClubs } from "../hooks/useClubs";
-import { useInterviews } from "../hooks/useInterviews";
-import { COLORS } from "../styles/colors";
+// 🔥 QUAN TRỌNG: Kiểm tra kỹ tên file trong folder components/tables/
+import UsersTable from "../components/tables/UsersTable";       // Phải khớp tên file UsersTable.jsx
+import ClubsTable from "../components/tables/ClubsTable";       // Phải khớp tên file ClubsTable.jsx
+import InterviewsTable from "../components/tables/InterviewsTable"; // Phải khớp tên file InterviewsTable.jsx
+
+// Modals
+import UserModal from "../components/modals/UserModal"; // Nếu chưa tách thì dùng AdminDashboardModals
+import ClubModal from "../components/modals/ClubModal"; // Nếu chưa tách thì dùng AdminDashboardModals
+
+// Hooks
+import { useUsers } from "../hooks/useUsers";         // Kiểm tra file này có chưa
+import { useClubs } from "../hooks/useClubs";         // Kiểm tra file này có chưa
+import { useInterviews } from "../hooks/useInterviews"; // Kiểm tra file này có chưa
+import { COLORS } from "../styles/colors";            // Kiểm tra file colors.js
 
 const LeaderDashboard = () => {
   const [activeTab, setActiveTab] = useState("users");
@@ -23,9 +30,14 @@ const LeaderDashboard = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [editingClub, setEditingClub] = useState(null);
   const [selectedClubId, setSelectedClubId] = useState("");
+  
+  // Fake data context
+  const clubId = "current-club-id"; 
+  const clubName = "Tên Câu Lạc Bộ"; 
 
   const navigate = useNavigate();
   
+  // Hook Users
   const {
     users,
     loading: userLoading,
@@ -34,6 +46,7 @@ const LeaderDashboard = () => {
     deleteUser,
   } = useUsers();
 
+  // Hook Clubs
   const {
     clubs,
     loading: clubLoading,
@@ -42,6 +55,7 @@ const LeaderDashboard = () => {
     deleteClub,
   } = useClubs();
 
+  // Hook Interviews
   const {
     interviews,
     loading: interviewLoading,
@@ -49,6 +63,7 @@ const LeaderDashboard = () => {
     setInterviews,
   } = useInterviews();
 
+  // Effects
   useEffect(() => {
     if (clubs.length > 0 && !selectedClubId) {
       setSelectedClubId(clubs[0].clubId);
@@ -61,6 +76,7 @@ const LeaderDashboard = () => {
     }
   }, [activeTab, selectedClubId]);
 
+  // Handlers
   const handleAddUser = () => {
     setEditingUser(null);
     setShowUserModal(true);
@@ -137,9 +153,12 @@ const LeaderDashboard = () => {
 
   return (
     <div style={styles.root}>
+      {/* Header component có thể cần chỉnh lại props cho khớp */}
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <div style={styles.content}>
+        
+        {/* USERS TAB */}
         {activeTab === "users" && (
           <>
             <StatCard
@@ -152,12 +171,16 @@ const LeaderDashboard = () => {
                 Thêm mới
               </Button>
             </div>
-            <UserTable
+            
+            {/* Component Table */}
+            <UsersTable
               users={users}
               loading={userLoading}
-              onEdit={handleEditUser}
-              onDelete={deleteUser}
+              onEdit={handleEditUser} // Lưu ý: UsersTable cần props này
+              onDelete={deleteUser}   // Lưu ý: UsersTable cần props này
+              // Nếu UsersTable dùng tên props khác (ví dụ onEditUser), hãy sửa lại cho khớp
             />
+
             {showUserModal && (
               <UserModal
                 user={editingUser}
@@ -168,6 +191,7 @@ const LeaderDashboard = () => {
           </>
         )}
 
+        {/* CLUBS TAB */}
         {activeTab === "clubs" && (
           <>
             <StatCard
@@ -180,12 +204,14 @@ const LeaderDashboard = () => {
                 Thêm câu lạc bộ
               </Button>
             </div>
-            <ClubTable
+            
+            <ClubsTable
               clubs={clubs}
               loading={clubLoading}
               onEdit={handleEditClub}
               onDelete={deleteClub}
             />
+
             {showClubModal && (
               <ClubModal
                 club={editingClub}
@@ -197,6 +223,7 @@ const LeaderDashboard = () => {
           </>
         )}
 
+        {/* INTERVIEWS TAB */}
         {activeTab === "interviews" && (
           <>
             <StatCard
@@ -224,12 +251,21 @@ const LeaderDashboard = () => {
                 Thêm phỏng vấn
               </Button>
             </div>
-            <InterviewTable
+            
+            <InterviewsTable
               interviews={interviews}
               loading={interviewLoading}
             />
           </>
         )}
+
+        {/* CHAT SECTION */}
+        <section style={{ padding: "40px 20px" }}>
+          <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+            <LeaderChatPanel clubId={clubId} clubName={clubName} />
+          </div>
+        </section>
+
       </div>
     </div>
   );

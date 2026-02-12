@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "bootstrap/dist/css/bootstrap.min.css";
+import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight } from "lucide-react";
+import "../styles/LoginPage.css"; // Nhớ import CSS
 import logo from "../assets/logo.png";
-import bg from "../assets/bg.jpg";
+import bg from "../assets/bg.jpg"; // Dùng làm ảnh minh họa bên trái
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // Thêm state ẩn/hiện pass
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +27,7 @@ const LoginPage = () => {
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.message || "Sai email hoặc mật khẩu");
+        throw new Error(errData.message || "Email hoặc mật khẩu không đúng.");
       }
 
       const data = await res.json();
@@ -33,11 +35,13 @@ const LoginPage = () => {
       localStorage.setItem("role", data.role);
       localStorage.setItem("fullName", data.fullName);
 
-      // Chuyển trang theo role
-      if (data.role === "admin") navigate("/admin");
-      else if (data.role === "leader") navigate("/leader");
-      else if (data.role === "member") navigate("/member");
-      else navigate("/home");
+      // Điều hướng thông minh
+      switch (data.role) {
+        case "admin": navigate("/admin"); break;
+        case "leader": navigate("/leader"); break;
+        case "member": navigate("/member"); break;
+        default: navigate("/home");
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -46,85 +50,109 @@ const LoginPage = () => {
   };
 
   return (
-    <div
-      className="d-flex align-items-center justify-content-center"
-      style={{
-        width: "100vw",
-        height: "100vh",
-        backgroundImage: `url(${bg})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div
-        className="card shadow-lg p-5"
-        style={{
-          width: "400px",
-          borderRadius: "20px",
-          backgroundColor: "rgba(255, 255, 255, 0.95)",
-        }}
-      >
-        {/* Logo + App Name */}
-        <div className="text-center mb-4">
-          <img src={logo} alt="Logo" style={{ width: "80px" }} />
-          <h3 className="mt-3 fw-bold" style={{ color: "#ff7a18" }}>
-            Student Club
-          </h3>
-          <p className="text-muted" style={{ fontSize: "14px" }}>
-            Quản lý CLB sinh viên dễ dàng
+    <div className="login-page">
+      {/* 1. LEFT SIDE - BANNER & IMAGE */}
+      <div className="login-banner">
+        <div className="banner-content">
+          <img src={bg} alt="Community" className="banner-img" />
+          <h1 style={{fontSize: '36px', fontWeight: 800, marginBottom: '16px'}}>Welcome to UniClubs</h1>
+          <p style={{fontSize: '16px', lineHeight: 1.6, opacity: 0.9}}>
+            Nền tảng kết nối, quản lý và phát triển cộng đồng sinh viên hàng đầu. 
+            Tham gia ngay để không bỏ lỡ các sự kiện hấp dẫn!
           </p>
         </div>
+      </div>
 
-        <h5 className="fw-bold mb-3 text-center" style={{ color: "#ff7a18" }}>
-          Đăng nhập
-        </h5>
-
-        {/* Error */}
-        {error && <div className="alert alert-danger py-2">{error}</div>}
-
-        {/* Login Form */}
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="form-label fw-semibold">Email</label>
-            <input
-              type="email"
-              className="form-control rounded-pill"
-              placeholder="Nhập email..."
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+      {/* 2. RIGHT SIDE - LOGIN FORM */}
+      <div className="login-form-container">
+        <div className="login-box">
+          {/* Logo Brand */}
+          <div className="brand-header">
+            <img src={logo} alt="Logo" className="brand-logo" />
+            <span className="brand-name">UniClubs</span>
           </div>
 
-          <div className="mb-3">
-            <label className="form-label fw-semibold">Mật khẩu</label>
-            <input
-              type="password"
-              className="form-control rounded-pill"
-              placeholder="Nhập mật khẩu..."
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+          <div className="welcome-text">
+            <h2>Đăng nhập</h2>
+            <p>Vui lòng nhập thông tin để tiếp tục.</p>
           </div>
 
-          <button
-            type="submit"
-            className="btn w-100 fw-bold rounded-pill"
-            style={{ backgroundColor: "#ff7a18", color: "#fff" }}
-            disabled={loading}
-          >
-            {loading ? "Đang đăng nhập..." : "Đăng nhập"}
-          </button>
-        </form>
-        <div className="text-center mt-3">
-          <button
-            className="btn btn-link fw-bold"
-            style={{ color: "#ff7a18", textDecoration: "underline" }}
-            onClick={() => navigate("/forgot-password")}
-          >
-            Quên mật khẩu?
-          </button>
+          {/* Error Notification */}
+          {error && (
+            <div className="error-msg">
+              <AlertCircle size={18} />
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            {/* Email Input */}
+            <div className="input-group-custom">
+              <label className="input-label">Email</label>
+              <div className="input-wrapper">
+                <Mail size={20} className="input-icon" />
+                <input
+                  type="email"
+                  className="form-input"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password Input */}
+            <div className="input-group-custom">
+              <label className="input-label">Mật khẩu</label>
+              <div className="input-wrapper">
+                <Lock size={20} className="input-icon" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className="form-input"
+                  placeholder="Nhập mật khẩu"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="toggle-password"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'right' }}>
+              <span 
+                className="forgot-link" 
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate("/forgot-password")}
+              >
+                Quên mật khẩu?
+              </span>
+            </div>
+
+            <button type="submit" className="btn-login" disabled={loading}>
+              {loading ? "Đang xử lý..." : (
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  Đăng nhập <ArrowRight size={20} />
+                </span>
+              )}
+            </button>
+          </form>
+
+          <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: '#64748b' }}>
+            Chưa có tài khoản?{' '}
+            <span 
+              style={{ color: '#3b82f6', fontWeight: 600, cursor: 'pointer' }}
+              onClick={() => navigate('/register')} // Nếu có trang đăng ký
+            >
+              Đăng ký ngay
+            </span>
+          </p>
         </div>
       </div>
     </div>
