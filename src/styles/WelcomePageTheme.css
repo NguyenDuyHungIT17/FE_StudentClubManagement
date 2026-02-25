@@ -1,0 +1,186 @@
+/* src/styles/AuthTheme.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Đổi tên class từ auth-container thành auth-layout cho khớp với file React của bạn */
+.auth-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: #d32a2a;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+.auth-banner {
+  flex: 1;
+  /* Thay đổi dòng background này */
+  background: linear-gradient(135deg, #3f960c 0%, #005b9f 100%); 
+  
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  color: white; /* Giữ chữ màu trắng */
+  z-index: 1;
+}
+
+/* Hiệu ứng bóng mờ (Circles) */
+.auth-banner::before, .auth-banner::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+}
+.auth-banner::before {
+  width: 400px; height: 400px;
+  background: rgba(59, 130, 246, 0.4); 
+  top: -100px; left: -100px;
+}
+.auth-banner::after {
+  width: 300px; height: 300px;
+  background: rgba(249, 115, 22, 0.4); 
+  bottom: -50px; right: -50px;
+}
+
+.banner-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 500px;
+}
+
+/* ✅ SỬA LỖI ẢNH TO TẠI ĐÂY */
+.banner-img {
+  width: 100%;             /* Luôn chiếm 100% của thẻ cha (banner-content) */
+  max-width: 400px;        /* Nhưng tối đa chỉ được 400px */
+  height: auto;            /* Giữ nguyên tỉ lệ khung hình */
+  max-height: 40vh;        /* Tránh ảnh quá cao đẩy text ra khỏi màn hình */
+  object-fit: cover;       /* Cắt cúp ảnh gọn gàng */
+  margin-bottom: 40px;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  transform: perspective(1000px) rotateY(-5deg);
+  transition: transform 0.5s ease;
+}
+
+.banner-img:hover {
+  transform: perspective(1000px) rotateY(0deg) scale(1.02);
+}
+
+/* --- PHẢI: FORM --- */
+/* Đổi tên class cho khớp với file React */
+.auth-form-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: white;
+  padding: 40px;
+}
+
+.auth-box {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.auth-subtitle {
+  color: #64748b;
+  margin-bottom: 32px;
+}
+
+/* INPUT STYLES */
+.auth-input-group {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.auth-input-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.auth-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-input-icon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 15px;
+  outline: none;
+  background: #f8fafc;
+  transition: all 0.2s;
+  box-sizing: border-box; /* Quan trọng để padding không làm to input ra ngoài */
+}
+
+.auth-input:focus {
+  border-color: #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* BUTTONS */
+.auth-btn {
+  width: 100%;
+  padding: 14px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.auth-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.auth-btn:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.auth-error {
+  background: #fee2e2;
+  color: #ef4444;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .auth-banner { display: none; }
+}

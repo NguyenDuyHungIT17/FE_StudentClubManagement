@@ -1,4 +1,6 @@
-const API_BASE_URL = "https://localhost:7251/api";
+// Chỉ khai báo Base URL ở đây.
+// Sau này deploy thật, bạn có thể thay bằng process.env.REACT_APP_API_URL
+const API_BASE_URL = "http://localhost:5207/api";
 
 export const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -8,9 +10,10 @@ export const getAuthHeaders = () => {
   };
 };
 
-export const apiRequest = async (url, options = {}) => {
+export const apiRequest = async (endpoint, options = {}) => {
   try {
-    const response = await fetch(`${API_BASE_URL}${url}`, {
+    // Đảm bảo nối đúng Base URL với endpoint truyền vào
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers: {
         ...getAuthHeaders(),
@@ -18,12 +21,14 @@ export const apiRequest = async (url, options = {}) => {
       },
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP Error: ${response.status}`);
+    const result = await response.json();
+
+    if (!response.ok || result.isSuccess === false) {
+      throw new Error(result.message || `Lỗi kết nối API (Status: ${response.status})`);
     }
 
-    return await response.json();
+    return result.data !== undefined ? result.data : result;
+
   } catch (error) {
     throw error;
   }

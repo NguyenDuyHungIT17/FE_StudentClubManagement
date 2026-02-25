@@ -1,0 +1,147 @@
+/* src/styles/AuthTheme.css */
+.auth-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--bg-main, #f8fafc);
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+.auth-banner {
+  flex: 1;
+  
+  /* Xóa background cũ và thêm các dòng sau */
+  background-image: url('../assets/truong_haui.jpg'); /* Đường dẫn tới ảnh của bạn */
+  background-size: cover; /* Ép ảnh phủ kín toàn bộ khung */
+  background-position: center; /* Canh giữa ảnh */
+  background-repeat: no-repeat; /* Không lặp lại ảnh */
+  
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  color: white;
+  z-index: 1;
+}
+
+/* TÙY CHỌN PHỤ: Phủ một lớp màu đen mờ lên ảnh để chữ trắng dễ đọc hơn */
+.auth-banner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6); /* Phủ lớp đen mờ 60% */
+  z-index: -1; 
+  /* Xóa thuộc tính filter: blur(100px); cũ đi nếu có */
+}
+/* Nếu dùng lớp mờ này, hãy xóa luôn class .auth-banner::after ở code cũ đi cho đỡ rối */
+
+.auth-form-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: white;
+  padding: 40px;
+}
+
+.auth-box {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.auth-subtitle {
+  color: #64748b;
+  margin-bottom: 32px;
+}
+
+.auth-input-group {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.auth-input-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.auth-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-input-icon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 15px;
+  outline: none;
+  background: #f8fafc;
+  transition: all 0.2s;
+}
+
+.auth-input:focus {
+  border-color: #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 14px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.auth-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.auth-btn:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.auth-error {
+  background: #fee2e2;
+  color: #ef4444;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .auth-banner { display: none; }
+}

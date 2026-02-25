@@ -1,6 +1,11 @@
+// src/pages/AdminDashboard.jsx
 import React from "react";
 import { ThemeProvider } from "../context/ThemeContext";
-import { useAdminDashboard } from "../hooks/useAdminDashboard";
+
+// Import Hooks chuẩn
+import { useUsers } from "../hooks/useUsers";
+import { useDashboardUI } from "../hooks/useDashboardUI";
+
 import "../styles/UniClubsTheme.css";
 
 // Components Layout
@@ -10,61 +15,93 @@ import StatsSection from "../components/dashboard/StatsSection";
 
 // Components Tables
 import UsersTable from "../components/tables/UsersTable";
-import ClubsTable from "../components/tables/ClubsTable";
-import MembersTable from "../components/tables/MembersTable";
-import InterviewsTable from "../components/tables/InterviewsTable";
+// Tạm ẩn các bảng khác cho đến khi bạn viết xong hook useClubs, useMembers...
+// import ClubsTable from "../components/tables/ClubsTable"; 
+// import MembersTable from "../components/tables/MembersTable";
+// import InterviewsTable from "../components/tables/InterviewsTable";
 
-// Component Modals (Chứa tất cả các form)
+// Component Modals
 import AdminDashboardModals from "../components/dashboard/AdminDashboardModals";
 
 const DashboardContent = () => {
-  // Lấy TOÀN BỘ state và function từ Custom Hook
+  // 1. LẤY DATA & LOGIC TỪ HOOK useUsers
+  const { 
+    users, 
+    createUser, 
+    updateUser, 
+    deleteUser 
+  } = useUsers();
+
+  // 2. LẤY STATE GIAO DIỆN TỪ HOOK useDashboardUI
   const {
-    // 1. State UI & Data
     activeTab, setActiveTab,
-    users, clubs, interviews, clubMembers,
     
-    // 2. Filters & Selection States
+    // States cho User Modal
+    showUserModal, setShowUserModal,
+    editingUser, setEditingUser,
+    userForm, setUserForm,
+    viewingUser, setViewingUser,
+    showViewUserModal, setShowViewUserModal,
+    
+    // State cho Lọc
     userFilterRole, setUserFilterRole,
-    selectedClubId, setSelectedClubId,
-    selectedMemberClubId, setSelectedMemberClubId,
-    interviewFilterResult, setInterviewFilterResult,
+  } = useDashboardUI();
 
-    // 3. CRUD Handlers (Truyền xuống các Table)
-    openAddUser, openEditUser, deleteUser, viewUser,
-    openAddClub, openEditClub, deleteClub, viewClub,
-    openAddMember, openEditMember, deleteMember, viewMember,
-    openAddInterview, openEditInterview, deleteInterview, viewInterview, 
-    sendEmail, // Hàm mở modal gửi email
-
-    // 4. Modal Props (Spread toàn bộ props liên quan đến modal/form)
-    ...modalProps 
-  } = useAdminDashboard();
-
-  // Helper: Lọc ra user chưa tham gia CLB đang chọn (để truyền vào Modal Member)
-  const getAvailableUsers = () => {
-    if (!clubMembers) return users;
-    const memberUserIds = clubMembers.map((m) => m.userId);
-    return users.filter((u) => !memberUserIds.includes(u.userId));
+  // --- CÁC HÀM XỬ LÝ SỰ KIỆN CHO USER ---
+  const openAddUser = () => { 
+    setEditingUser(null); 
+    setUserForm({ fullName: "", email: "", password: "", role: "member", isActive: 1 }); 
+    setShowUserModal(true); 
   };
+  
+  const openEditUser = (u) => { 
+    setEditingUser(u.userId); 
+    setUserForm({ ...u, password: "" }); // Không điền sẵn pass cũ
+    setShowUserModal(true); 
+  };
+
+  const handleSaveUser = async () => {
+    // Gọi API từ hook useUsers
+    const result = editingUser 
+      ? await updateUser(editingUser, userForm) 
+      : await createUser(userForm);
+      
+    // Nếu API trả về true (thành công), ta mới đóng form
+    if (result && result.success) {
+      alert(result.message); // Hoặc dùng thư viện Toast
+      setShowUserModal(false);
+    }
+  };
+
+  const handleDeleteUser = async (id) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa tài khoản này?")) {
+      const result = await deleteUser(id);
+      if (result && result.success) {
+        alert(result.message);
+      }
+    }
+  };
+
+  const openViewUser = (u) => { 
+    setViewingUser(u); 
+    setShowViewUserModal(true); 
+  };
+
+  // --------------------------------------------------------
 
   return (
     <div className="dashboard-layout">
-      {/* Sidebar bên trái */}
+      {/* Sidebar */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
-      {/* Nội dung chính bên phải */}
+      {/* Khung nội dung chính */}
       <main className="main-content">
         <div className="scrollable-area">
-          {/* Header trên cùng (Title + Theme Toggle + User Info) */}
           <TopHeader title={activeTab} />
           
-          {/* 3 Thẻ thống kê */}
-          <StatsSection usersCount={users.length} clubsCount={clubs.length} />
+          <StatsSection usersCount={users.length} clubsCount={0} /> {/* Tạm để clubsCount = 0 */}
 
-          {/* --- NỘI DUNG THAY ĐỔI THEO TAB --- */}
-
-          {/* 1. Tab Users */}
+          {/* TAB USERS */}
           {activeTab === "users" && (
             <UsersTable 
               users={users}
@@ -72,67 +109,40 @@ const DashboardContent = () => {
               onFilterChange={setUserFilterRole}
               onAdd={openAddUser}
               onEdit={openEditUser}
-              onDelete={deleteUser}
-              onView={viewUser}
+              onDelete={handleDeleteUser}
+              onView={openViewUser}
             />
           )}
 
-          {/* 2. Tab Clubs */}
-          {activeTab === "clubs" && (
-            <ClubsTable 
-              clubs={clubs}
-              onAdd={openAddClub}
-              onEdit={openEditClub}
-              onDelete={deleteClub}
-              onView={viewClub}
-            />
-          )}
+          {/* Các Tab khác: Bạn sẽ mở comment ra khi code xong hook useClubs, useMembers... */}
+          {activeTab === "clubs" && <div><h1>Đang chờ code Hook Câu lạc bộ...</h1></div>}
+          {activeTab === "members" && <div><h1>Đang chờ code Hook Thành viên...</h1></div>}
+          {activeTab === "interviews" && <div><h1>Đang chờ code Hook Phỏng vấn...</h1></div>}
 
-          {/* 3. Tab Members */}
-          {activeTab === "members" && (
-            <MembersTable 
-              members={clubMembers}
-              clubs={clubs}
-              selectedClubId={selectedMemberClubId}
-              onSelectClub={setSelectedMemberClubId}
-              onAdd={openAddMember} 
-              onEdit={openEditMember}
-              onDelete={deleteMember}
-              onView={viewMember}
-            />
-          )}
-
-          {/* 4. Tab Interviews */}
-          {activeTab === "interviews" && (
-            <InterviewsTable 
-              interviews={interviews}
-              clubs={clubs}
-              selectedClubId={selectedClubId}
-              onSelectClub={setSelectedClubId}
-              filterResult={interviewFilterResult}
-              onFilterResult={setInterviewFilterResult}
-              onAdd={openAddInterview}
-              onEdit={openEditInterview}
-              onDelete={deleteInterview}
-              onView={viewInterview}
-              onSendEmail={() => modalProps.setShowEmailModal(true)} // Mở modal email thủ công từ nút trên table
-            />
-          )}
         </div>
       </main>
 
-      {/* --- MODAL MANAGER --- */}
-      {/* Component này ẩn, chỉ hiện lên khi các state showModal = true */}
+      {/* TẬP HỢP TẤT CẢ MODAL/POPUP VÀO ĐÂY */}
       <AdminDashboardModals 
-        {...modalProps} // Truyền tất cả state showModal, form data, handleSave... xuống
-        users={users}   // Truyền danh sách user để fill vào dropdown select
-        availableUsers={getAvailableUsers()} // Truyền user chưa join clb để fill dropdown add member
+        showUserModal={showUserModal} 
+        setShowUserModal={setShowUserModal}
+        userForm={userForm} 
+        setUserForm={setUserForm}
+        editingUser={editingUser}
+        handleSaveUser={handleSaveUser}
+        
+        showViewUserModal={showViewUserModal} 
+        setShowViewUserModal={setShowViewUserModal}
+        viewingUser={viewingUser}
+        
+        // Mấy cái liên quan tới Club tạm truyền null/mảng rỗng để không bị lỗi
+        users={users}
+        availableUsers={[]} 
       />
     </div>
   );
 };
 
-// Wrap component chính trong ThemeProvider để dùng Context Theme
 const AdminDashboard = () => (
   <ThemeProvider>
     <DashboardContent />
