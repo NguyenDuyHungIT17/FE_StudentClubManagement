@@ -8,7 +8,7 @@ const AdminDashboardModals = ({
   showViewUserModal, setShowViewUserModal, viewingUser,
 
   // --- CLUB PROPS ---
-  showClubModal, setShowClubModal, clubForm, setClubForm, handleSaveClub, editingClub, users,
+  showClubModal, setShowClubModal, clubForm, setClubForm, handleSaveClub, editingClub, users, clubs,
   showViewClubModal, setShowViewClubModal, viewingClub,
 
   // --- MEMBER PROPS ---
@@ -40,20 +40,38 @@ const AdminDashboardModals = ({
       
       {/* 1.1 ADD/EDIT USER */}
       {showUserModal && (
-        <Modal title={editingUser ? "Sửa tài khoản" : "Thêm tài khoản"} onClose={() => setShowUserModal(false)}>
+        <Modal title={editingUser ? "Sửa thông tin tài khoản" : "Thêm tài khoản mới"} onClose={() => setShowUserModal(false)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Họ tên</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Họ tên *</label>
               <input className="input-control" placeholder="Nhập họ tên" value={userForm.fullName} onChange={e => setUserForm({ ...userForm, fullName: e.target.value })} />
             </div>
+            
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Email</label>
-              <input className="input-control" placeholder="Nhập email" value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })} />
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Email *</label>
+              <input className="input-control" type="email" placeholder="Nhập email" value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })} disabled={!!editingUser} /* Tuỳ chọn: Có thể cấm sửa email nếu muốn bằng cách thêm disabled={!!editingUser} */ />
             </div>
-            <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Mật khẩu {!editingUser && '*'}</label>
-              <input className="input-control" type="password" placeholder={editingUser ? "Để trống nếu không đổi" : "Nhập mật khẩu"} value={userForm.password} onChange={e => setUserForm({ ...userForm, password: e.target.value })} />
-            </div>
+
+            {/* ⚠️ CHỈ HIỆN Ô MẬT KHẨU KHI THÊM MỚI (!editingUser) */}
+            {!editingUser && (
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Mật khẩu *</label>
+                <input className="input-control" type="password" placeholder="Nhập mật khẩu" value={userForm.password} onChange={e => setUserForm({ ...userForm, password: e.target.value })} />
+              </div>
+            )}
+
+            {!editingUser && (
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Thuộc Câu lạc bộ</label>
+                <select className="input-control" value={userForm.clubId} onChange={e => setUserForm({ ...userForm, clubId: e.target.value })}>
+                  <option value="">-- Không tham gia CLB nào --</option>
+                  {clubs && clubs.map(c => (
+                    <option key={c.clubId} value={c.clubId}>{c.clubName}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Vai trò</label>
               <select className="input-control" value={userForm.role} onChange={e => setUserForm({ ...userForm, role: e.target.value })}>
@@ -62,6 +80,7 @@ const AdminDashboardModals = ({
                 <option value="admin">Admin</option>
               </select>
             </div>
+
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Trạng thái</label>
               <select className="input-control" value={userForm.isActive} onChange={e => setUserForm({ ...userForm, isActive: parseInt(e.target.value) })}>
@@ -69,8 +88,9 @@ const AdminDashboardModals = ({
                 <option value={0}>Inactive</option>
               </select>
             </div>
+
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={handleSaveUser}>
-              {editingUser ? "Cập nhật" : "Tạo mới"}
+              {editingUser ? "Cập nhật tài khoản" : "Tạo tài khoản"}
             </button>
           </div>
         </Modal>

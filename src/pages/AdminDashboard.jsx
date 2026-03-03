@@ -60,16 +60,51 @@ const DashboardContent = () => {
     setShowUserModal(true); 
   };
 
-  const handleSaveUser = async () => {
-    // Gọi API từ hook useUsers
-    const result = editingUser 
-      ? await updateUser(editingUser, userForm) 
-      : await createUser(userForm);
+const handleSaveUser = async () => {
+    // 1. Kiểm tra dữ liệu rỗng
+    if (!userForm.fullName.trim() || !userForm.email.trim()) {
+      alert("Vui lòng nhập đầy đủ Họ tên và Email!");
+      return;
+    }
+
+    if (editingUser) {
+  // Tạo cục dữ liệu khớp 100% với định dạng Swagger bạn vừa gửi
+      const updatePayload = {
+        email: userForm.email.trim(),
+        fullName: userForm.fullName.trim(),
+        role: userForm.role,       // vd: "member", "leader", "admin"
+        isActive: userForm.isActive // vd: 1 hoặc 0
+      };
+
+      // Gọi hook updateUser (truyền vào ID và Payload)
+      const result = await updateUser(editingUser, updatePayload);
       
-    // Nếu API trả về true (thành công), ta mới đóng form
-    if (result && result.success) {
-      alert(result.message); // Hoặc dùng thư viện Toast
-      setShowUserModal(false);
+      if (result){
+        setShowUserModal(false); // Đóng popup khi thành công
+      }
+
+    } else {
+      if (!userForm.password.trim()) {
+        alert("Vui lòng nhập mật khẩu cho tài khoản mới!");
+        return;
+      }
+
+      // Thêm mới thì payload phải có thêm trường password
+      const createPayload = {
+        fullName: userForm.fullName.trim(),
+        email: userForm.email.trim(),
+        password: userForm.password, 
+        role: userForm.role,
+        isActive: parseInt(userForm.isActive),
+        // Ép kiểu clubId sang số nguyên (integer), nếu không chọn thì gửi null
+        clubId: userForm.clubId ? parseInt(userForm.clubId) : null 
+      };
+
+      const result = await createUser(createPayload);
+      
+      if (result) {
+        setShowUserModal(false); // Đóng popup khi thành công
+      }
     }
   };
 
