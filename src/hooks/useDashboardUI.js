@@ -11,6 +11,14 @@ export const useDashboardUI = () => {
   const [showViewUserModal, setShowViewUserModal] = useState(false);
   const [viewingUser, setViewingUser] = useState(null);
 
+  // --- TRẠNG THÁI FORM CLUB (MỚI THÊM) ---
+  const [showClubModal, setShowClubModal] = useState(false);
+  const [editingClub, setEditingClub] = useState(null);
+  // Thêm 'title' vào state khởi tạo
+  const [clubForm, setClubForm] = useState({ clubName: "", title: "", description: "", leaderId: "" });
+  const [showViewClubModal, setShowViewClubModal] = useState(false);
+  const [viewingClub, setViewingClub] = useState(null);
+
   // --- BỘ LỌC CHUNG ---
   const [userFilterRole, setUserFilterRole] = useState("all");
 
@@ -24,6 +32,11 @@ export const useDashboardUI = () => {
     showViewUserModal, setShowViewUserModal,
     viewingUser, setViewingUser,
     
-    userFilterRole, setUserFilterRole
+    userFilterRole, setUserFilterRole,
+
+    // Club
+    showClubModal, setShowClubModal, editingClub, setEditingClub,
+    clubForm, setClubForm, showViewClubModal, setShowViewClubModal,
+    viewingClub, setViewingClub
   };
 };

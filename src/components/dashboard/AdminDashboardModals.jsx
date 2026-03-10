@@ -118,29 +118,38 @@ const AdminDashboardModals = ({
         <Modal title={editingClub ? "Sửa Câu lạc bộ" : "Thêm Câu lạc bộ"} onClose={() => setShowClubModal(false)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Tên CLB</label>
-              <input className="input-control" placeholder="Nhập tên CLB" value={clubForm.clubName} onChange={e => setClubForm({ ...clubForm, clubName: e.target.value })} />
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Tên CLB *</label>
+              <input className="input-control" placeholder="Nhập tên CLB (VD: IT-Supporter)" value={clubForm.clubName} onChange={e => setClubForm({ ...clubForm, clubName: e.target.value })} />
             </div>
+            
+            {/* ✅ THÊM Ô TIÊU ĐỀ THEO ĐÚNG API CỦA BẠN */}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Tiêu đề (Title)</label>
+              <input className="input-control" placeholder="Nhập tiêu đề" value={clubForm.title} onChange={e => setClubForm({ ...clubForm, title: e.target.value })} />
+            </div>
+
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Mô tả</label>
               <textarea className="input-control" placeholder="Mô tả ngắn gọn" rows={4} value={clubForm.description} onChange={e => setClubForm({ ...clubForm, description: e.target.value })} />
             </div>
+            
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Trưởng CLB</label>
-              <select className="input-control" value={clubForm.leaderId} onChange={e => setClubForm({ ...clubForm, leaderId: e.target.value })}>
-                <option value="">-- Chọn Trưởng CLB --</option>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Trưởng CLB (Tuỳ chọn)</label>
+              <select className="input-control" value={clubForm.leaderId || ""} onChange={e => setClubForm({ ...clubForm, leaderId: e.target.value })}>
+                <option value="">-- Chưa có Trưởng CLB (Bỏ trống) --</option>
                 {users && users.filter(u => u.role === 'leader' || u.role === 'admin').map(u => (
                   <option key={u.userId} value={u.userId}>{u.fullName} ({u.email})</option>
                 ))}
               </select>
             </div>
+            
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={handleSaveClub}>
               {editingClub ? "Cập nhật" : "Tạo mới"}
             </button>
           </div>
         </Modal>
       )}
-
+      
       {/* 2.2 VIEW CLUB DETAILS */}
       {showViewClubModal && viewingClub && (
         <Modal title="Chi tiết Câu lạc bộ" onClose={() => setShowViewClubModal(false)}>
