@@ -4,7 +4,7 @@ import { ThemeProvider } from "../context/ThemeContext";
 
 // Import Hooks chuẩn
 import { useUsers } from "../hooks/useUsers";
-import { useClubs } from "../hooks/useClubs"; // ✅ FIX: Đã thêm import useClubs
+import { useClubs } from "../hooks/useClubs"; 
 import { useDashboardUI } from "../hooks/useDashboardUI";
 
 import "../styles/UniClubsTheme.css";
@@ -23,25 +23,35 @@ import AdminDashboardModals from "../components/dashboard/AdminDashboardModals";
 
 const DashboardContent = () => {
   // 1. LẤY DATA TỪ CÁC HOOK LOGIC
-  const { users, createUser, updateUser, deleteUser } = useUsers();
+  const { 
+    users, createUser, updateUser, deleteUser,
+    keyword: userKeyword, setKeyword: setUserKeyword,
+    filterRole: userFilterRole, setFilterRole: setUserFilterRole,
+    page: userPage, setPage: setUserPage,
+    paginationMeta: userPaginationMeta
+  } = useUsers();
+  
   const {
     clubs, createClub, updateClub, deleteClub,
     keyword, setKeyword, page, setPage, paginationMeta
   } = useClubs();
 
-  // 2. LẤY STATE GIAO DIỆN TỪ HOOK UI (✅ FIX: Đã gộp gọn gàng làm 1 lần gọi)
+  // 2. LẤY STATE GIAO DIỆN TỪ HOOK UI
   const {
     activeTab, setActiveTab,
 
     // States cho User
     showUserModal, setShowUserModal, editingUser, setEditingUser,
     userForm, setUserForm, viewingUser, setViewingUser,
-    showViewUserModal, setShowViewUserModal, userFilterRole, setUserFilterRole,
+    showViewUserModal, setShowViewUserModal, 
 
     // States cho Club
     showClubModal, setShowClubModal, editingClub, setEditingClub,
     clubForm, setClubForm, viewingClub, setViewingClub,
-    showViewClubModal, setShowViewClubModal
+    showViewClubModal, setShowViewClubModal,
+
+    clubErrors, setClubErrors,
+    userErrors, setUserErrors
   } = useDashboardUI();
 
   // =========================================================
@@ -50,38 +60,69 @@ const DashboardContent = () => {
   const openAddUser = () => {
     setEditingUser(null);
     setUserForm({ fullName: "", email: "", password: "", role: "member", isActive: 1, clubId: "" });
+    setUserErrors({});
     setShowUserModal(true);
   };
 
   const openEditUser = (u) => {
     setEditingUser(u.userId);
-    setUserForm({ ...u, password: "", clubId: u.clubId || "" }); // Đảm bảo fill đủ form
+    setUserForm({ ...u, password: "", clubId: u.clubId || "" });
+    setUserErrors({});
     setShowUserModal(true);
   };
 
   const handleSaveUser = async () => {
-    if (!userForm.fullName.trim() || !userForm.email.trim()) {
-      alert("Vui lòng nhập đầy đủ Họ tên và Email!");
+    let errors = {};
+
+    if (!userForm.fullName || !userForm.fullName.trim()) {
+      errors.fullName = "Vui lòng nhập họ tên";
+    }
+    if (!userForm.email || !userForm.email.trim()) {
+      errors.email = "Vui lòng nhập email";
+    }
+    if (!userForm.role) {
+      errors.role = "Vui lòng chọn vai trò";
+    }
+
+    if (userForm.isActive === "" || userForm.isActive === null || userForm.isActive === undefined) {
+      errors.isActive = "Vui lòng chọn trạng thái";
+    }
+
+    if (!editingUser) {
+      if (!userForm.password || !userForm.password.trim()) {
+        errors.password = "Vui lòng nhập mật khẩu";
+      }
+      if (!userForm.clubId) {
+        errors.clubId = "Vui lòng chọn Câu lạc bộ";
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setUserErrors(errors);
       return;
     }
+
+    // Nếu form hợp lệ, xóa lỗi cũ
+    setUserErrors({});
 
     if (editingUser) {
       const updatePayload = {
         email: userForm.email.trim(),
         fullName: userForm.fullName.trim(),
         role: userForm.role,
-        isActive: userForm.isActive
+        isActive: parseInt(userForm.isActive)
       };
 
       const result = await updateUser(editingUser, updatePayload);
-      if (result) setShowUserModal(false);
-
-    } else {
-      if (!userForm.password.trim()) {
-        alert("Vui lòng nhập mật khẩu cho tài khoản mới!");
-        return;
+      if (result && result.success) {
+        setShowUserModal(false);                 
+      } else if (result.validationErrors) {
+        setUserErrors(result.validationErrors);  
+      } else {
+        alert(result?.message || "Cập nhật thất bại!"); 
       }
 
+    } else {
       const createPayload = {
         fullName: userForm.fullName.trim(),
         email: userForm.email.trim(),
@@ -92,13 +133,27 @@ const DashboardContent = () => {
       };
 
       const result = await createUser(createPayload);
-      if (result) setShowUserModal(false);
+      if (result && result.success) {
+        setShowUserModal(false);                 
+      } else if (result.validationErrors) {
+        setUserErrors(result.validationErrors);  
+      } else {
+        alert(result?.message || "Thêm mới thất bại!"); 
+      }
     }
   };
 
   const handleDeleteUser = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa tài khoản này?")) {
-      await deleteUser(id);
+      const result = await deleteUser(id);
+      if (result && result.success) {
+         // alert(result.message); 
+      } else if (result.validationErrors) {
+        const errorMessages = Object.values(result.validationErrors).join("\n");
+        alert("Không thể xóa:\n" + errorMessages);
+      } else {
+        alert(result?.message || "Xóa thất bại!");
+      }
     }
   };
 
@@ -110,6 +165,7 @@ const DashboardContent = () => {
   const openAddClub = () => {
     setEditingClub(null);
     setClubForm({ clubName: "", title: "", description: "", leaderId: "" });
+    setClubErrors({});
     setShowClubModal(true);
   };
 
@@ -121,17 +177,27 @@ const DashboardContent = () => {
       description: c.description,
       leaderId: c.leaderId || ""
     });
+    setClubErrors({});
     setShowClubModal(true);
   };
 
   const handleSaveClub = async () => {
-    // 1. Kiểm tra validate
-    if (!clubForm.clubName.trim()) {
-      alert("Vui lòng nhập tên Câu lạc bộ!");
-      return;
+    let errors = {};
+
+    if (!clubForm.clubName || !clubForm.clubName.trim()) {
+      errors.clubName = "Vui lòng nhập tên Câu lạc bộ";
+    }
+    if (!clubForm.title || !clubForm.title.trim()) {
+      errors.title = "Vui lòng nhập tiêu đề";
     }
 
-    // 2. Chuẩn bị dữ liệu gửi đi
+    if (Object.keys(errors).length > 0) {
+      setClubErrors(errors);
+      return;
+    }
+    
+    setClubErrors({});
+
     const payload = {
       clubName: clubForm.clubName.trim(),
       title: clubForm.title?.trim() || "",
@@ -139,23 +205,30 @@ const DashboardContent = () => {
       leaderId: clubForm.leaderId ? parseInt(clubForm.leaderId) : null
     };
 
-    // 3. Gọi API (Sửa hoặc Thêm mới)
     const result = editingClub
       ? await updateClub(editingClub, payload)
       : await createClub(payload);
 
-    // 4. Xử lý kết quả trả về TẠI MỘT CHỖ DUY NHẤT
     if (result && result.success) {
-      alert(result.message);         // Báo thành công (chỉ 1 lần)
-      setShowClubModal(false);       // TẮT FORM -> Tự động quay về màn hình List
+      setShowClubModal(false);
+    } else if (result.validationErrors) {
+      setClubErrors(result.validationErrors);
     } else {
-      alert(result?.message || "Có lỗi xảy ra từ máy chủ!"); // Báo lỗi nếu thất bại
+      alert(result?.message || "Lỗi thao tác!");
     }
   };
 
   const handleDeleteClub = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa Câu lạc bộ này?")) {
-      await deleteClub(id);
+      const result = await deleteClub(id);
+      if (result && result.success) {
+         // alert(result.message);
+      } else if (result.validationErrors) {
+        const errorMessages = Object.values(result.validationErrors).join("\n");
+        alert("Không thể xóa:\n" + errorMessages);
+      } else {
+        alert(result?.message || "Xóa thất bại!");
+      }
     }
   };
 
@@ -175,13 +248,20 @@ const DashboardContent = () => {
         <div className="scrollable-area">
           <TopHeader title={activeTab} />
 
-          {/* ✅ FIX: Hiển thị đúng số lượng Club */}
-          <StatsSection usersCount={users.length} clubsCount={clubs.length} />
+          {/* Hiển thị số lượng dựa trên tổng số bản ghi từ Meta Phân Trang */}
+          <StatsSection usersCount={userPaginationMeta.TotalCount || 0} clubsCount={paginationMeta.TotalCount || 0} />
 
           {/* TAB USERS */}
           {activeTab === "users" && (
             <UsersTable
               users={users}
+
+              keyword={userKeyword}
+              onSearch={setUserKeyword}
+              page={userPage}
+              totalPages={userPaginationMeta.TotalPages}
+              onPageChange={setUserPage}
+
               filterRole={userFilterRole}
               onFilterChange={setUserFilterRole}
               onAdd={openAddUser}
@@ -195,11 +275,11 @@ const DashboardContent = () => {
           {activeTab === "clubs" && (
             <ClubsTable
               clubs={clubs}
-              keyword={keyword}               // Truyền từ khóa tìm kiếm
-              onSearch={setKeyword}           // Hàm cập nhật từ khóa
-              page={page}                     // Trang hiện hành
-              totalPages={paginationMeta.TotalPages} // Tổng số trang
-              onPageChange={setPage}          // Hàm chuyển trang
+              keyword={keyword}               
+              onSearch={setKeyword}           
+              page={page}                     
+              totalPages={paginationMeta.TotalPages} 
+              onPageChange={setPage}          
               onAdd={openAddClub}
               onEdit={openEditClub}
               onDelete={handleDeleteClub}
@@ -227,9 +307,11 @@ const DashboardContent = () => {
         showViewClubModal={showViewClubModal} setShowViewClubModal={setShowViewClubModal}
         viewingClub={viewingClub}
 
-        // Dữ liệu dùng chung
+        userErrors={userErrors} setUserErrors={setUserErrors} 
+        clubErrors={clubErrors} setClubErrors={setClubErrors}
+        
         users={users}
-        clubs={clubs} // ✅ FIX: Đã truyền mảng clubs vào form
+        clubs={clubs} 
         availableUsers={[]}
       />
     </div>

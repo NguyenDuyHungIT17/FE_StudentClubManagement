@@ -7,6 +7,7 @@ export const useDashboardUI = () => {
   // --- TRẠNG THÁI FORM USER ---
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [userErrors, setUserErrors] = useState({});
   const [userForm, setUserForm] = useState({ fullName: "", email: "", password: "", role: "member", isActive: 1 });
   const [showViewUserModal, setShowViewUserModal] = useState(false);
   const [viewingUser, setViewingUser] = useState(null);
@@ -18,6 +19,7 @@ export const useDashboardUI = () => {
   const [clubForm, setClubForm] = useState({ clubName: "", title: "", description: "", leaderId: "" });
   const [showViewClubModal, setShowViewClubModal] = useState(false);
   const [viewingClub, setViewingClub] = useState(null);
+  const [clubErrors, setClubErrors] = useState({});
 
   // --- BỘ LỌC CHUNG ---
   const [userFilterRole, setUserFilterRole] = useState("all");
@@ -29,6 +31,8 @@ export const useDashboardUI = () => {
     editingUser, setEditingUser,
     userForm, setUserForm,
     
+    userErrors, setUserErrors,
+
     showViewUserModal, setShowViewUserModal,
     viewingUser, setViewingUser,
     
@@ -37,6 +41,7 @@ export const useDashboardUI = () => {
     // Club
     showClubModal, setShowClubModal, editingClub, setEditingClub,
     clubForm, setClubForm, showViewClubModal, setShowViewClubModal,
-    viewingClub, setViewingClub
+    viewingClub, setViewingClub,
+    clubErrors, setClubErrors
   };
 };

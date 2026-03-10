@@ -1,31 +1,23 @@
 import { apiRequest, API_BASE_URL } from './api';
 
-export const userService = {
-  // Thêm tham số role vào đây
-  getAll: async (keyword = "", role = "all", pageNumber = 1, pageSize = 10) => {
+export const memberService = {
+  // Lấy danh sách kèm phân trang, tìm kiếm và lọc theo Club
+  getAll: async (keyword = "", clubId = "all", pageNumber = 1, pageSize = 10) => {
     const token = localStorage.getItem("token");
     
-    // Gắn params
     const query = new URLSearchParams();
     if (keyword) query.append("KeyWord", keyword);
-    
-    // NẾU ROLE KHÁC "all" THÌ MỚI GỬI LÊN BACKEND
-    if (role && role !== "all") {
-      query.append("Role", role); 
-    }
-    
+    if (clubId && clubId !== "all") query.append("ClubId", clubId); 
     query.append("PageNumber", pageNumber);
     query.append("PageSize", pageSize);
 
-    // Dùng fetch trực tiếp để đọc Header
-    const response = await fetch(`${API_BASE_URL}/Users?${query.toString()}`, {
+    const response = await fetch(`${API_BASE_URL}/Members?${query.toString()}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
     });
 
     const result = await response.json().catch(() => null);
     if (!response.ok || result?.isSuccess === false) throw new Error(result?.message || "Lỗi lấy dữ liệu");
 
-    // Đọc header phân trang
     const paginationStr = response.headers.get('x-pagination');
     const pagination = paginationStr ? JSON.parse(paginationStr) : null;
 
@@ -35,20 +27,17 @@ export const userService = {
     };
   },
   
-  // Tạo user mới
-  create: (userData) => apiRequest('/Users', {
+  create: (data) => apiRequest('/Members', {
     method: 'POST',
-    body: JSON.stringify(userData),
+    body: JSON.stringify(data),
   }),
   
-  // Cập nhật user
-  update: (userId, userData) => apiRequest(`/Users/${userId}`, {
+  update: (id, data) => apiRequest(`/Members/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(userData),
+    body: JSON.stringify(data),
   }),
   
-  // Xóa user
-  delete: (userId) => apiRequest(`/Users/${userId}`, {
+  delete: (id) => apiRequest(`/Members/${id}`, {
     method: 'DELETE',
   }),
 };

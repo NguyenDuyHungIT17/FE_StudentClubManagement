@@ -38,6 +38,9 @@ export const useClubs = () => {
       fetchClubs(); 
       return { success: true, message: "Thêm câu lạc bộ thành công!" };
     } catch (err) {
+      if (err.isValidationError) {
+        return { success: false, validationErrors: err.errors };
+      }
       return { success: false, message: err.message };
     }
   };
@@ -48,6 +51,9 @@ export const useClubs = () => {
       fetchClubs(); // Sửa xong load lại trang hiện tại
       return { success: true, message: "Cập nhật câu lạc bộ thành công!" };
     } catch (err) {
+      if (err.isValidationError) {
+        return { success: false, validationErrors: err.errors };
+      }
       return { success: false, message: err.message };
     }
   };

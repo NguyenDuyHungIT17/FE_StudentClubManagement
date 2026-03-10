@@ -7,10 +7,11 @@ const AdminDashboardModals = ({
   showUserModal, setShowUserModal, userForm, setUserForm, handleSaveUser, editingUser,
   showViewUserModal, setShowViewUserModal, viewingUser,
 
+  userErrors, setUserErrors,
   // --- CLUB PROPS ---
   showClubModal, setShowClubModal, clubForm, setClubForm, handleSaveClub, editingClub, users, clubs,
   showViewClubModal, setShowViewClubModal, viewingClub,
-
+  clubErrors, setClubErrors,
   // --- MEMBER PROPS ---
   showMemberModal, setShowMemberModal, memberForm, setMemberForm, handleSaveMember, editingMember, availableUsers,
   showViewMemberModal, setShowViewMemberModal, viewingMember,
@@ -42,53 +43,122 @@ const AdminDashboardModals = ({
       {showUserModal && (
         <Modal title={editingUser ? "Sửa thông tin tài khoản" : "Thêm tài khoản mới"} onClose={() => setShowUserModal(false)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            
+            {/* Ô HỌ TÊN */}
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Họ tên *</label>
-              <input className="input-control" placeholder="Nhập họ tên" value={userForm.fullName} onChange={e => setUserForm({ ...userForm, fullName: e.target.value })} />
+              <input 
+                className="input-control" 
+                style={{ borderColor: userErrors?.fullName ? '#ef4444' : '' }} 
+                placeholder="Nhập họ tên" 
+                value={userForm.fullName} 
+                onChange={e => {
+                  setUserForm({ ...userForm, fullName: e.target.value });
+                  if (userErrors?.fullName) setUserErrors({ ...userErrors, fullName: null });
+                }} 
+              />
+              {userErrors?.fullName && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{userErrors.fullName}</span>}
             </div>
             
+            {/* Ô EMAIL */}
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Email *</label>
-              <input className="input-control" type="email" placeholder="Nhập email" value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })} disabled={!!editingUser} /* Tuỳ chọn: Có thể cấm sửa email nếu muốn bằng cách thêm disabled={!!editingUser} */ />
+              <input 
+                className="input-control" 
+                style={{ borderColor: userErrors?.email ? '#ef4444' : '' }} 
+                type="email" 
+                placeholder="Nhập email" 
+                value={userForm.email} 
+                disabled={!!editingUser} 
+                onChange={e => {
+                  setUserForm({ ...userForm, email: e.target.value });
+                  if (userErrors?.email) setUserErrors({ ...userErrors, email: null });
+                }} 
+              />
+              {userErrors?.email && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{userErrors.email}</span>}
             </div>
 
-            {/* ⚠️ CHỈ HIỆN Ô MẬT KHẨU KHI THÊM MỚI (!editingUser) */}
+            {/* Ô MẬT KHẨU (CHỈ HIỆN KHI THÊM MỚI) */}
             {!editingUser && (
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Mật khẩu *</label>
-                <input className="input-control" type="password" placeholder="Nhập mật khẩu" value={userForm.password} onChange={e => setUserForm({ ...userForm, password: e.target.value })} />
+                <input 
+                  className="input-control" 
+                  style={{ borderColor: userErrors?.password ? '#ef4444' : '' }} 
+                  type="password" 
+                  placeholder="Nhập mật khẩu" 
+                  value={userForm.password} 
+                  onChange={e => {
+                    setUserForm({ ...userForm, password: e.target.value });
+                    if (userErrors?.password) setUserErrors({ ...userErrors, password: null });
+                  }} 
+                />
+                {userErrors?.password && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{userErrors.password}</span>}
               </div>
             )}
 
+            {/* Ô CÂU LẠC BỘ (CHỈ HIỆN KHI THÊM MỚI) */}
             {!editingUser && (
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Thuộc Câu lạc bộ</label>
-                <select className="input-control" value={userForm.clubId} onChange={e => setUserForm({ ...userForm, clubId: e.target.value })}>
-                  <option value="">-- Không tham gia CLB nào --</option>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Thuộc Câu lạc bộ *</label>
+                <select 
+                  className="input-control" 
+                  style={{ borderColor: userErrors?.clubId ? '#ef4444' : '' }} 
+                  value={userForm.clubId} 
+                  onChange={e => {
+                    setUserForm({ ...userForm, clubId: e.target.value });
+                    if (userErrors?.clubId) setUserErrors({ ...userErrors, clubId: null });
+                  }}
+                >
+                  <option value="">-- Vui lòng chọn Câu lạc bộ --</option>
                   {clubs && clubs.map(c => (
                     <option key={c.clubId} value={c.clubId}>{c.clubName}</option>
                   ))}
                 </select>
+                {userErrors?.clubId && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{userErrors.clubId}</span>}
               </div>
             )}
 
+            {/* Ô VAI TRÒ */}
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Vai trò</label>
-              <select className="input-control" value={userForm.role} onChange={e => setUserForm({ ...userForm, role: e.target.value })}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Vai trò *</label>
+              <select 
+                className="input-control" 
+                style={{ borderColor: userErrors?.role ? '#ef4444' : '' }} 
+                value={userForm.role} 
+                onChange={e => {
+                  setUserForm({ ...userForm, role: e.target.value });
+                  if (userErrors?.role) setUserErrors({ ...userErrors, role: null });
+                }}
+              >
+                <option value="">-- Chọn vai trò --</option>
                 <option value="member">Member</option>
                 <option value="leader">Leader</option>
                 <option value="admin">Admin</option>
               </select>
+              {userErrors?.role && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{userErrors.role}</span>}
             </div>
 
+            {/* Ô TRẠNG THÁI */}
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Trạng thái</label>
-              <select className="input-control" value={userForm.isActive} onChange={e => setUserForm({ ...userForm, isActive: parseInt(e.target.value) })}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Trạng thái *</label>
+              <select 
+                className="input-control" 
+                style={{ borderColor: userErrors?.isActive ? '#ef4444' : '' }} 
+                value={userForm.isActive} 
+                onChange={e => {
+                  setUserForm({ ...userForm, isActive: parseInt(e.target.value) });
+                  if (userErrors?.isActive) setUserErrors({ ...userErrors, isActive: null });
+                }}
+              >
+                <option value="">-- Chọn trạng thái --</option>
                 <option value={1}>Active</option>
                 <option value={0}>Inactive</option>
               </select>
+              {userErrors?.isActive && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{userErrors.isActive}</span>}
             </div>
 
+            {/* NÚT LƯU */}
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={handleSaveUser}>
               {editingUser ? "Cập nhật tài khoản" : "Tạo tài khoản"}
             </button>
@@ -117,30 +187,73 @@ const AdminDashboardModals = ({
       {showClubModal && (
         <Modal title={editingClub ? "Sửa Câu lạc bộ" : "Thêm Câu lạc bộ"} onClose={() => setShowClubModal(false)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            
+            {/* TÊN CLB */}
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Tên CLB *</label>
-              <input className="input-control" placeholder="Nhập tên CLB (VD: IT-Supporter)" value={clubForm.clubName} onChange={e => setClubForm({ ...clubForm, clubName: e.target.value })} />
+              <input 
+                className="input-control" 
+                style={{ borderColor: clubErrors?.clubName ? '#ef4444' : '' }}
+                placeholder="Nhập tên CLB (VD: IT-Supporter)" 
+                value={clubForm.clubName} 
+                onChange={e => {
+                  setClubForm({ ...clubForm, clubName: e.target.value });
+                  if (clubErrors?.clubName) setClubErrors({ ...clubErrors, clubName: null });
+                }} 
+              />
+              {clubErrors?.clubName && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{clubErrors.clubName}</span>}
             </div>
             
-            {/* ✅ THÊM Ô TIÊU ĐỀ THEO ĐÚNG API CỦA BẠN */}
+            {/* TIÊU ĐỀ */}
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Tiêu đề (Title)</label>
-              <input className="input-control" placeholder="Nhập tiêu đề" value={clubForm.title} onChange={e => setClubForm({ ...clubForm, title: e.target.value })} />
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Tiêu đề (Title) *</label>
+              <input 
+                className="input-control" 
+                style={{ borderColor: clubErrors?.title ? '#ef4444' : '' }}
+                placeholder="Nhập tiêu đề" 
+                value={clubForm.title} 
+                onChange={e => {
+                  setClubForm({ ...clubForm, title: e.target.value });
+                  if (clubErrors?.title) setClubErrors({ ...clubErrors, title: null });
+                }} 
+              />
+              {clubErrors?.title && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{clubErrors.title}</span>}
             </div>
 
+            {/* MÔ TẢ */}
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Mô tả</label>
-              <textarea className="input-control" placeholder="Mô tả ngắn gọn" rows={4} value={clubForm.description} onChange={e => setClubForm({ ...clubForm, description: e.target.value })} />
+              <textarea 
+                className="input-control" 
+                style={{ borderColor: clubErrors?.description ? '#ef4444' : '' }}
+                placeholder="Mô tả ngắn gọn" rows={4} 
+                value={clubForm.description} 
+                onChange={e => {
+                  setClubForm({ ...clubForm, description: e.target.value });
+                  if (clubErrors?.description) setClubErrors({ ...clubErrors, description: null });
+                }} 
+              />
+              {clubErrors?.description && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{clubErrors.description}</span>}
             </div>
             
+            {/* TRƯỞNG CLB */}
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Trưởng CLB (Tuỳ chọn)</label>
-              <select className="input-control" value={clubForm.leaderId || ""} onChange={e => setClubForm({ ...clubForm, leaderId: e.target.value })}>
+              <select 
+                className="input-control" 
+                style={{ borderColor: clubErrors?.leaderId ? '#ef4444' : '' }}
+                value={clubForm.leaderId || ""} 
+                onChange={e => {
+                  setClubForm({ ...clubForm, leaderId: e.target.value });
+                  if (clubErrors?.leaderId) setClubErrors({ ...clubErrors, leaderId: null });
+                }}
+              >
                 <option value="">-- Chưa có Trưởng CLB (Bỏ trống) --</option>
                 {users && users.filter(u => u.role === 'leader' || u.role === 'admin').map(u => (
                   <option key={u.userId} value={u.userId}>{u.fullName} ({u.email})</option>
                 ))}
               </select>
+              {clubErrors?.leaderId && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{clubErrors.leaderId}</span>}
             </div>
             
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={handleSaveClub}>
