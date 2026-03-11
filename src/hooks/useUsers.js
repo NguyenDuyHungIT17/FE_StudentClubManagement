@@ -20,6 +20,7 @@ export const useUsers = () => {
     try {
       // Truyền thêm filterRole vào API
       const response = await userService.getAll(keyword, filterRole, page, pageSize);
+      console.log("2. TRẠM HOOK - Dữ liệu sau khi bóc tách:", response.data);
       setUsers(response.data || []); 
       setPaginationMeta(response.pagination);
     } catch (err) {

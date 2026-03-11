@@ -1,7 +1,8 @@
 // src/pages/AdminDashboard.jsx
 import React from "react";
 import { ThemeProvider } from "../context/ThemeContext";
-
+import { useMembers } from "../hooks/useMembers";
+import MembersTable from "../components/tables/MembersTable";
 // Import Hooks chuẩn
 import { useUsers } from "../hooks/useUsers";
 import { useClubs } from "../hooks/useClubs"; 
@@ -36,6 +37,14 @@ const DashboardContent = () => {
     keyword, setKeyword, page, setPage, paginationMeta
   } = useClubs();
 
+const {
+    members, createMember, updateMember, deleteMember,
+    filterClub: memberFilterClub, setFilterClub: setMemberFilterClub,
+    filterRole: memberFilterRole, setFilterRole: setMemberFilterRole,
+    page: memberPage, setPage: setMemberPage,
+    paginationMeta: memberPaginationMeta
+  } = useMembers();
+
   // 2. LẤY STATE GIAO DIỆN TỪ HOOK UI
   const {
     activeTab, setActiveTab,
@@ -49,6 +58,10 @@ const DashboardContent = () => {
     showClubModal, setShowClubModal, editingClub, setEditingClub,
     clubForm, setClubForm, viewingClub, setViewingClub,
     showViewClubModal, setShowViewClubModal,
+
+    showMemberModal, setShowMemberModal, editingMember, setEditingMember,
+    memberForm, setMemberForm, viewingMember, setViewingMember,
+    showViewMemberModal, setShowViewMemberModal, memberErrors, setMemberErrors,
 
     clubErrors, setClubErrors,
     userErrors, setUserErrors
@@ -234,6 +247,77 @@ const DashboardContent = () => {
 
   const openViewClub = (c) => { setViewingClub(c); setShowViewClubModal(true); };
 
+  // =========================================================
+  // --- CÁC HÀM XỬ LÝ SỰ KIỆN CHO MEMBERS ---
+  // =========================================================
+  const openAddMember = () => {
+    setEditingMember(null);
+    const nowLocal = new Date().toISOString().slice(0, 16); 
+    setMemberForm({ clubId: "", userId: "", memberRole: "member", joinAt: nowLocal });
+    setMemberErrors({});
+    setShowMemberModal(true);
+  };
+
+const openEditMember = (m) => {
+    setEditingMember(m.clubMemberId);
+    const formattedDate = m.joinAt ? m.joinAt.slice(0, 16) : "";
+    
+    setMemberForm({
+      // Ép kiểu sang chuỗi để thẻ Select so khớp chính xác
+      clubId: m.clubId ? m.clubId.toString() : "", 
+      userId: m.userId ? m.userId.toString() : "", 
+      memberRole: m.memberRole || "member",
+      joinAt: formattedDate
+    });
+    
+    setMemberErrors({});
+    setShowMemberModal(true);
+  };
+
+  const handleSaveMember = async () => {
+    let errors = {};
+    if (!memberForm.clubId) errors.clubId = "Vui lòng chọn Câu lạc bộ";
+    if (!memberForm.userId) errors.userId = "Vui lòng chọn User";
+    if (!memberForm.memberRole) errors.memberRole = "Vui lòng chọn vai trò";
+
+    if (Object.keys(errors).length > 0) {
+      setMemberErrors(errors);
+      return;
+    }
+    setMemberErrors({});
+
+    const payload = {
+      clubId: parseInt(memberForm.clubId),
+      userId: parseInt(memberForm.userId),
+      memberRole: memberForm.memberRole,
+      joinAt: memberForm.joinAt ? new Date(memberForm.joinAt).toISOString() : null
+    };
+
+    const result = editingMember
+      ? await updateMember(editingMember, payload)
+      : await createMember(payload);
+
+    if (result && result.success) {
+      setShowMemberModal(false);
+    } else if (result.validationErrors) {
+      setMemberErrors(result.validationErrors);
+    } else {
+      alert(result?.message || "Lỗi thao tác!");
+    }
+  };
+
+  const handleDeleteMember = async (id) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa thành viên này?")) {
+      const result = await deleteMember(id);
+      if (result && result.validationErrors) {
+        alert("Lỗi:\n" + Object.values(result.validationErrors).join("\n"));
+      } else if (!result.success) {
+        alert(result?.message || "Xóa thất bại!");
+      }
+    }
+  };
+
+  const openViewMember = (m) => { setViewingMember(m); setShowViewMemberModal(true); };
 
   // =========================================================
   // GIAO DIỆN CHÍNH
@@ -287,7 +371,28 @@ const DashboardContent = () => {
             />
           )}
 
-          {activeTab === "members" && <div><h1>Đang chờ code Hook Thành viên...</h1></div>}
+          {/* TAB MEMBERS */}
+          {activeTab === "members" && (
+            <MembersTable
+              members={members}
+              clubs={clubs}
+              users={users}
+
+              page={memberPage}
+              totalPages={memberPaginationMeta.TotalPages}
+              onPageChange={setMemberPage}
+
+              filterClub={memberFilterClub}
+              onFilterClubChange={setMemberFilterClub}
+              filterRole={memberFilterRole}
+              onFilterRoleChange={setMemberFilterRole}
+              
+              onAdd={openAddMember}
+              onEdit={openEditMember}
+              onDelete={handleDeleteMember}
+              onView={openViewMember}
+            />
+          )}
           {activeTab === "interviews" && <div><h1>Đang chờ code Hook Phỏng vấn...</h1></div>}
 
         </div>
@@ -310,6 +415,13 @@ const DashboardContent = () => {
         userErrors={userErrors} setUserErrors={setUserErrors} 
         clubErrors={clubErrors} setClubErrors={setClubErrors}
         
+        showMemberModal={showMemberModal} setShowMemberModal={setShowMemberModal}
+        memberForm={memberForm} setMemberForm={setMemberForm}
+        editingMember={editingMember} handleSaveMember={handleSaveMember}
+        showViewMemberModal={showViewMemberModal} setShowViewMemberModal={setShowViewMemberModal}
+        viewingMember={viewingMember}
+        memberErrors={memberErrors} setMemberErrors={setMemberErrors}
+
         users={users}
         clubs={clubs} 
         availableUsers={[]}

@@ -21,6 +21,14 @@ export const useDashboardUI = () => {
   const [viewingClub, setViewingClub] = useState(null);
   const [clubErrors, setClubErrors] = useState({});
 
+  const [showMemberModal, setShowMemberModal] = useState(false);
+  const [editingMember, setEditingMember] = useState(null);
+  const [memberForm, setMemberForm] = useState({ clubId: "", userId: "", memberRole: "member", joinAt: "" });
+  const [viewingMember, setViewingMember] = useState(null);
+  const [showViewMemberModal, setShowViewMemberModal] = useState(false);
+  const [memberErrors, setMemberErrors] = useState({});
+
+
   // --- BỘ LỌC CHUNG ---
   const [userFilterRole, setUserFilterRole] = useState("all");
 
@@ -42,6 +50,10 @@ export const useDashboardUI = () => {
     showClubModal, setShowClubModal, editingClub, setEditingClub,
     clubForm, setClubForm, showViewClubModal, setShowViewClubModal,
     viewingClub, setViewingClub,
-    clubErrors, setClubErrors
+    clubErrors, setClubErrors, 
+
+    showMemberModal, setShowMemberModal, editingMember, setEditingMember,
+    memberForm, setMemberForm, viewingMember, setViewingMember,
+    showViewMemberModal, setShowViewMemberModal, memberErrors, setMemberErrors
   };
 };

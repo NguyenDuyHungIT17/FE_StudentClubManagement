@@ -6,8 +6,9 @@ export const useMembers = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [keyword, setKeyword] = useState("");
-  const [filterClub, setFilterClub] = useState("all"); // Lọc theo CLB thay vì Role
+  // States quản lý bảng và Lọc kép
+  const [filterClub, setFilterClub] = useState("all"); 
+  const [filterRole, setFilterRole] = useState("all"); 
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [paginationMeta, setPaginationMeta] = useState({ TotalPages: 1, TotalCount: 0 });
@@ -16,7 +17,7 @@ export const useMembers = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await memberService.getAll(keyword, filterClub, page, pageSize);
+      const response = await memberService.getAll(filterClub, filterRole, page, pageSize);
       setMembers(response.data || []); 
       setPaginationMeta(response.pagination);
     } catch (err) {
@@ -24,7 +25,7 @@ export const useMembers = () => {
     } finally {
       setLoading(false);
     }
-  }, [keyword, filterClub, page, pageSize]);
+  }, [filterClub, filterRole, page, pageSize]);
 
   useEffect(() => {
     fetchMembers();
@@ -65,8 +66,8 @@ export const useMembers = () => {
 
   return {
     members, loading, error,
-    keyword, setKeyword, 
     filterClub, setFilterClub, 
+    filterRole, setFilterRole,
     page, setPage, 
     paginationMeta,
     fetchMembers, createMember, updateMember, deleteMember,

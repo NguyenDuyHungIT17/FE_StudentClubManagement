@@ -13,8 +13,9 @@ const AdminDashboardModals = ({
   showViewClubModal, setShowViewClubModal, viewingClub,
   clubErrors, setClubErrors,
   // --- MEMBER PROPS ---
-  showMemberModal, setShowMemberModal, memberForm, setMemberForm, handleSaveMember, editingMember, availableUsers,
-  showViewMemberModal, setShowViewMemberModal, viewingMember,
+showMemberModal, setShowMemberModal, memberForm, setMemberForm,
+  editingMember, handleSaveMember, showViewMemberModal, setShowViewMemberModal,
+  viewingMember, memberErrors, setMemberErrors,
 
   // --- INTERVIEW PROPS ---
   showInterviewModal, setShowInterviewModal, interviewForm, setInterviewForm, handleSaveInterview, editingInterview,
@@ -284,22 +285,82 @@ const AdminDashboardModals = ({
       {showMemberModal && (
         <Modal title={editingMember ? "Sửa Thành viên" : "Thêm Thành viên"} onClose={() => setShowMemberModal(false)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            
+            {/* CÂU LẠC BỘ */}
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Người dùng</label>
-              <select className="input-control" value={memberForm.userId} onChange={e => setMemberForm({ ...memberForm, userId: e.target.value })} disabled={!!editingMember}>
-                <option value="">-- Chọn User --</option>
-                {(editingMember ? users : availableUsers).map(u => (
-                  <option key={u.userId} value={u.userId}>{u.fullName} ({u.email})</option>
-                ))}
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Câu lạc bộ *</label>
+              <select 
+                className="input-control" 
+                style={{ 
+                  borderColor: memberErrors?.clubId ? '#ef4444' : '',
+                  backgroundColor: editingMember ? '#f3f4f6' : 'white',
+                  cursor: editingMember ? 'not-allowed' : 'auto'
+                }} 
+                value={memberForm.clubId || ""} 
+                disabled={!!editingMember} // KHÓA KHI ĐANG SỬA
+                onChange={e => { 
+                  setMemberForm({ ...memberForm, clubId: e.target.value }); 
+                  if (memberErrors?.clubId) setMemberErrors({ ...memberErrors, clubId: null }); 
+                }}
+              >
+                <option value="">-- Chọn Câu lạc bộ --</option>
+                {clubs && clubs.map(c => <option key={c.clubId} value={c.clubId}>{c.clubName}</option>)}
               </select>
+              {memberErrors?.clubId && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{memberErrors.clubId}</span>}
             </div>
+
+            {/* TÀI KHOẢN USER */}
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Vai trò trong CLB</label>
-              <select className="input-control" value={memberForm.memberRole} onChange={e => setMemberForm({ ...memberForm, memberRole: e.target.value })}>
-                <option value="member">Member</option>
-                <option value="leader">Leader</option>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Tài khoản User *</label>
+              <select 
+                className="input-control" 
+                style={{ 
+                  borderColor: memberErrors?.userId ? '#ef4444' : '',
+                  backgroundColor: editingMember ? '#f3f4f6' : 'white',
+                  cursor: editingMember ? 'not-allowed' : 'auto'
+                }} 
+                value={memberForm.userId || ""} 
+                disabled={!!editingMember} // KHÓA KHI ĐANG SỬA
+                onChange={e => { 
+                  setMemberForm({ ...memberForm, userId: e.target.value }); 
+                  if (memberErrors?.userId) setMemberErrors({ ...memberErrors, userId: null }); 
+                }}
+              >
+                <option value="">-- Chọn Người dùng --</option>
+                {users && users.map(u => <option key={u.userId} value={u.userId}>{u.fullName} ({u.email})</option>)}
               </select>
+              {memberErrors?.userId && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{memberErrors.userId}</span>}
             </div>
+
+            {/* VAI TRÒ TRONG CLB */}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Vai trò trong CLB *</label>
+              <select 
+                className="input-control" 
+                style={{ borderColor: memberErrors?.memberRole ? '#ef4444' : '' }} 
+                value={memberForm.memberRole} 
+                onChange={e => { 
+                  setMemberForm({ ...memberForm, memberRole: e.target.value }); 
+                  if (memberErrors?.memberRole) setMemberErrors({ ...memberErrors, memberRole: null }); 
+                }}
+              >
+                <option value="member">Thành viên (Member)</option>
+                <option value="leader">Trưởng CLB (Leader)</option>
+              </select>
+              {memberErrors?.memberRole && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{memberErrors.memberRole}</span>}
+            </div>
+
+            {/* NGÀY THAM GIA */}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Ngày tham gia</label>
+              <input 
+                type="datetime-local" 
+                className="input-control" 
+                value={memberForm.joinAt} 
+                onChange={e => setMemberForm({ ...memberForm, joinAt: e.target.value })} 
+              />
+            </div>
+            
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={handleSaveMember}>
               {editingMember ? "Cập nhật" : "Thêm vào CLB"}
             </button>
@@ -307,18 +368,17 @@ const AdminDashboardModals = ({
         </Modal>
       )}
 
-      {/* 3.2 VIEW MEMBER DETAILS */}
+      {/* 3.2 VIEW MEMBER */}
       {showViewMemberModal && viewingMember && (
         <Modal title="Chi tiết Thành viên" onClose={() => setShowViewMemberModal(false)}>
-          <ViewItem label="ID Thành viên" value={viewingMember.clubMemberId} />
-          <ViewItem label="Họ tên" value={viewingMember.userName} />
-          <ViewItem label="Email" value={viewingMember.userEmail} />
-          <ViewItem label="Vai trò" value={viewingMember.memberRole} />
-          <ViewItem label="Ngày tham gia" value={viewingMember.joinAt ? new Date(viewingMember.joinAt).toLocaleDateString('vi-VN') : null} />
-          <button className="btn" style={{ width: '100%', justifyContent: 'center', border: '1px solid var(--border)', marginTop: 10 }} onClick={() => setShowViewMemberModal(false)}>Đóng</button>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}><strong style={{ color: 'var(--text-sub)' }}>Mã thẻ:</strong> <span>#{viewingMember.clubMemberId}</span></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}><strong style={{ color: 'var(--text-sub)' }}>Hệ thống ID:</strong> <span>User: {viewingMember.userId} - Club: {viewingMember.clubId}</span></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}><strong style={{ color: 'var(--text-sub)' }}>Vai trò:</strong> <span><span className={`badge ${viewingMember.memberRole === 'leader' ? 'warning' : 'primary'}`}>{viewingMember.memberRole}</span></span></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}><strong style={{ color: 'var(--text-sub)' }}>Ngày gia nhập:</strong> <span>{viewingMember.joinAt ? new Date(viewingMember.joinAt).toLocaleString('vi-VN') : "Chưa cập nhật"}</span></div>
+          </div>
         </Modal>
       )}
-
 
       {/* ==================================================================================
           4. INTERVIEW MODALS
