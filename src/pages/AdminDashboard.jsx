@@ -5,8 +5,10 @@ import { useMembers } from "../hooks/useMembers";
 import MembersTable from "../components/tables/MembersTable";
 // Import Hooks chuẩn
 import { useUsers } from "../hooks/useUsers";
-import { useClubs } from "../hooks/useClubs"; 
+import { useClubs } from "../hooks/useClubs";
 import { useDashboardUI } from "../hooks/useDashboardUI";
+import { useEvents } from "../hooks/useEvents";
+import EventsTable from "../components/tables/EventsTable";
 
 import "../styles/UniClubsTheme.css";
 
@@ -24,26 +26,35 @@ import AdminDashboardModals from "../components/dashboard/AdminDashboardModals";
 
 const DashboardContent = () => {
   // 1. LẤY DATA TỪ CÁC HOOK LOGIC
-  const { 
+  const {
     users, createUser, updateUser, deleteUser,
     keyword: userKeyword, setKeyword: setUserKeyword,
     filterRole: userFilterRole, setFilterRole: setUserFilterRole,
     page: userPage, setPage: setUserPage,
     paginationMeta: userPaginationMeta
   } = useUsers();
-  
+
   const {
     clubs, createClub, updateClub, deleteClub,
     keyword, setKeyword, page, setPage, paginationMeta
   } = useClubs();
 
-const {
+  const {
     members, createMember, updateMember, deleteMember,
     filterClub: memberFilterClub, setFilterClub: setMemberFilterClub,
     filterRole: memberFilterRole, setFilterRole: setMemberFilterRole,
     page: memberPage, setPage: setMemberPage,
     paginationMeta: memberPaginationMeta
   } = useMembers();
+
+  const {
+    events, createEvent, updateEvent, deleteEvent,
+    keyword: eventKeyword, setKeyword: setEventKeyword,
+    filterClub: eventFilterClub, setFilterClub: setEventFilterClub,
+    filterIsPrivate: eventFilterIsPrivate, setFilterIsPrivate: setEventFilterIsPrivate,
+    page: eventPage, setPage: setEventPage,
+    paginationMeta: eventPaginationMeta
+  } = useEvents();
 
   // 2. LẤY STATE GIAO DIỆN TỪ HOOK UI
   const {
@@ -52,7 +63,7 @@ const {
     // States cho User
     showUserModal, setShowUserModal, editingUser, setEditingUser,
     userForm, setUserForm, viewingUser, setViewingUser,
-    showViewUserModal, setShowViewUserModal, 
+    showViewUserModal, setShowViewUserModal,
 
     // States cho Club
     showClubModal, setShowClubModal, editingClub, setEditingClub,
@@ -62,6 +73,11 @@ const {
     showMemberModal, setShowMemberModal, editingMember, setEditingMember,
     memberForm, setMemberForm, viewingMember, setViewingMember,
     showViewMemberModal, setShowViewMemberModal, memberErrors, setMemberErrors,
+
+    showEventModal, setShowEventModal, editingEvent, setEditingEvent,
+    eventForm, setEventForm, viewingEvent, setViewingEvent,
+    showViewEventModal, setShowViewEventModal, 
+    eventErrors, setEventErrors,
 
     clubErrors, setClubErrors,
     userErrors, setUserErrors
@@ -128,11 +144,11 @@ const {
 
       const result = await updateUser(editingUser, updatePayload);
       if (result && result.success) {
-        setShowUserModal(false);                 
+        setShowUserModal(false);
       } else if (result.validationErrors) {
-        setUserErrors(result.validationErrors);  
+        setUserErrors(result.validationErrors);
       } else {
-        alert(result?.message || "Cập nhật thất bại!"); 
+        alert(result?.message || "Cập nhật thất bại!");
       }
 
     } else {
@@ -147,11 +163,11 @@ const {
 
       const result = await createUser(createPayload);
       if (result && result.success) {
-        setShowUserModal(false);                 
+        setShowUserModal(false);
       } else if (result.validationErrors) {
-        setUserErrors(result.validationErrors);  
+        setUserErrors(result.validationErrors);
       } else {
-        alert(result?.message || "Thêm mới thất bại!"); 
+        alert(result?.message || "Thêm mới thất bại!");
       }
     }
   };
@@ -160,7 +176,7 @@ const {
     if (window.confirm("Bạn có chắc chắn muốn xóa tài khoản này?")) {
       const result = await deleteUser(id);
       if (result && result.success) {
-         // alert(result.message); 
+        // alert(result.message); 
       } else if (result.validationErrors) {
         const errorMessages = Object.values(result.validationErrors).join("\n");
         alert("Không thể xóa:\n" + errorMessages);
@@ -208,7 +224,7 @@ const {
       setClubErrors(errors);
       return;
     }
-    
+
     setClubErrors({});
 
     const payload = {
@@ -235,7 +251,7 @@ const {
     if (window.confirm("Bạn có chắc chắn muốn xóa Câu lạc bộ này?")) {
       const result = await deleteClub(id);
       if (result && result.success) {
-         // alert(result.message);
+        // alert(result.message);
       } else if (result.validationErrors) {
         const errorMessages = Object.values(result.validationErrors).join("\n");
         alert("Không thể xóa:\n" + errorMessages);
@@ -252,24 +268,24 @@ const {
   // =========================================================
   const openAddMember = () => {
     setEditingMember(null);
-    const nowLocal = new Date().toISOString().slice(0, 16); 
+    const nowLocal = new Date().toISOString().slice(0, 16);
     setMemberForm({ clubId: "", userId: "", memberRole: "member", joinAt: nowLocal });
     setMemberErrors({});
     setShowMemberModal(true);
   };
 
-const openEditMember = (m) => {
+  const openEditMember = (m) => {
     setEditingMember(m.clubMemberId);
     const formattedDate = m.joinAt ? m.joinAt.slice(0, 16) : "";
-    
+
     setMemberForm({
       // Ép kiểu sang chuỗi để thẻ Select so khớp chính xác
-      clubId: m.clubId ? m.clubId.toString() : "", 
-      userId: m.userId ? m.userId.toString() : "", 
+      clubId: m.clubId ? m.clubId.toString() : "",
+      userId: m.userId ? m.userId.toString() : "",
       memberRole: m.memberRole || "member",
       joinAt: formattedDate
     });
-    
+
     setMemberErrors({});
     setShowMemberModal(true);
   };
@@ -317,6 +333,69 @@ const openEditMember = (m) => {
     }
   };
 
+  // =========================================================
+  // --- CÁC HÀM XỬ LÝ SỰ KIỆN CHO EVENTS ---
+  // =========================================================
+  const openAddEvent = () => {
+    setEditingEvent(null);
+    const nowLocal = new Date().toISOString().slice(0, 16);
+    setEventForm({ clubId: "", title: "", description: "", eventDate: nowLocal, isPrivate: true, priority: 1 });
+    setEventErrors({});
+    setShowEventModal(true);
+  };
+
+  const openEditEvent = (ev) => {
+    setEditingEvent(ev.id);
+    const formattedDate = ev.eventDate ? ev.eventDate.slice(0, 16) : "";
+    setEventForm({
+      clubId: ev.clubId ? ev.clubId.toString() : "",
+      title: ev.title || "",
+      description: ev.description || "",
+      eventDate: formattedDate,
+      isPrivate: ev.isPrivate,
+      priority: ev.priority || 1
+    });
+    setEventErrors({});
+    setShowEventModal(true);
+  };
+
+  const handleSaveEvent = async () => {
+    let errors = {};
+    if (!eventForm.clubId) errors.clubId = "Vui lòng chọn Câu lạc bộ";
+    if (!eventForm.title || !eventForm.title.trim()) errors.title = "Vui lòng nhập tên Sự kiện";
+    if (!eventForm.eventDate) errors.eventDate = "Vui lòng chọn thời gian";
+
+    if (Object.keys(errors).length > 0) {
+      setEventErrors(errors);
+      return;
+    }
+    setEventErrors({});
+
+    const payload = {
+      clubId: parseInt(eventForm.clubId),
+      title: eventForm.title.trim(),
+      description: eventForm.description,
+      isPrivate: eventForm.isPrivate,
+      priority: eventForm.priority,
+      eventDate: eventForm.eventDate ? new Date(eventForm.eventDate).toISOString() : null
+    };
+
+    const result = editingEvent ? await updateEvent(editingEvent, payload) : await createEvent(payload);
+
+    if (result && result.success) setShowEventModal(false);
+    else if (result.validationErrors) setEventErrors(result.validationErrors);
+    else alert(result?.message || "Lỗi thao tác!");
+  };
+
+  const handleDeleteEvent = async (id) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa Sự kiện này?")) {
+      const result = await deleteEvent(id);
+      if (result && result.validationErrors) alert("Lỗi:\n" + Object.values(result.validationErrors).join("\n"));
+      else if (!result.success) alert(result?.message || "Xóa thất bại!");
+    }
+  };
+
+  const openViewEvent = (ev) => { setViewingEvent(ev); setShowViewEventModal(true); };
   const openViewMember = (m) => { setViewingMember(m); setShowViewMemberModal(true); };
 
   // =========================================================
@@ -359,11 +438,11 @@ const openEditMember = (m) => {
           {activeTab === "clubs" && (
             <ClubsTable
               clubs={clubs}
-              keyword={keyword}               
-              onSearch={setKeyword}           
-              page={page}                     
-              totalPages={paginationMeta.TotalPages} 
-              onPageChange={setPage}          
+              keyword={keyword}
+              onSearch={setKeyword}
+              page={page}
+              totalPages={paginationMeta.TotalPages}
+              onPageChange={setPage}
               onAdd={openAddClub}
               onEdit={openEditClub}
               onDelete={handleDeleteClub}
@@ -386,7 +465,7 @@ const openEditMember = (m) => {
               onFilterClubChange={setMemberFilterClub}
               filterRole={memberFilterRole}
               onFilterRoleChange={setMemberFilterRole}
-              
+
               onAdd={openAddMember}
               onEdit={openEditMember}
               onDelete={handleDeleteMember}
@@ -394,7 +473,30 @@ const openEditMember = (m) => {
             />
           )}
           {activeTab === "interviews" && <div><h1>Đang chờ code Hook Phỏng vấn...</h1></div>}
+          
+          {/* TAB EVENTS */}
+          {activeTab === "events" && (
+            <EventsTable
+              events={events}
+              clubs={clubs}
 
+              keyword={eventKeyword}
+              onSearch={setEventKeyword}
+              page={eventPage}
+              totalPages={eventPaginationMeta.TotalPages}
+              onPageChange={setEventPage}
+
+              filterClub={eventFilterClub}
+              onFilterClubChange={setEventFilterClub}
+              filterIsPrivate={eventFilterIsPrivate}
+              onFilterIsPrivateChange={setEventFilterIsPrivate}
+              
+              onAdd={openAddEvent}
+              onEdit={openEditEvent}
+              onDelete={handleDeleteEvent}
+              onView={openViewEvent}
+            />
+          )}
         </div>
       </main>
 
@@ -412,9 +514,9 @@ const openEditMember = (m) => {
         showViewClubModal={showViewClubModal} setShowViewClubModal={setShowViewClubModal}
         viewingClub={viewingClub}
 
-        userErrors={userErrors} setUserErrors={setUserErrors} 
+        userErrors={userErrors} setUserErrors={setUserErrors}
         clubErrors={clubErrors} setClubErrors={setClubErrors}
-        
+
         showMemberModal={showMemberModal} setShowMemberModal={setShowMemberModal}
         memberForm={memberForm} setMemberForm={setMemberForm}
         editingMember={editingMember} handleSaveMember={handleSaveMember}
@@ -422,8 +524,15 @@ const openEditMember = (m) => {
         viewingMember={viewingMember}
         memberErrors={memberErrors} setMemberErrors={setMemberErrors}
 
+        showEventModal={showEventModal} setShowEventModal={setShowEventModal}
+        eventForm={eventForm} setEventForm={setEventForm}
+        editingEvent={editingEvent} handleSaveEvent={handleSaveEvent}
+        showViewEventModal={showViewEventModal} setShowViewEventModal={setShowViewEventModal}
+        viewingEvent={viewingEvent}
+        eventErrors={eventErrors} setEventErrors={setEventErrors}
+
         users={users}
-        clubs={clubs} 
+        clubs={clubs}
         availableUsers={[]}
       />
     </div>

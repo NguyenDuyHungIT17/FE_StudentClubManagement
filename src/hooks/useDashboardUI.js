@@ -28,32 +28,43 @@ export const useDashboardUI = () => {
   const [showViewMemberModal, setShowViewMemberModal] = useState(false);
   const [memberErrors, setMemberErrors] = useState({});
 
+  // --- THÊM STATE CHO SỰ KIỆN (EVENTS) ---
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [eventForm, setEventForm] = useState({ clubId: "", title: "", description: "", eventDate: "", isPrivate: true, priority: 0 });
+  const [viewingEvent, setViewingEvent] = useState(null);
+  const [showViewEventModal, setShowViewEventModal] = useState(false);
+  const [eventErrors, setEventErrors] = useState({});
 
   // --- BỘ LỌC CHUNG ---
   const [userFilterRole, setUserFilterRole] = useState("all");
 
   return {
     activeTab, setActiveTab,
-    
+
     showUserModal, setShowUserModal,
     editingUser, setEditingUser,
     userForm, setUserForm,
-    
+
     userErrors, setUserErrors,
 
     showViewUserModal, setShowViewUserModal,
     viewingUser, setViewingUser,
-    
+
     userFilterRole, setUserFilterRole,
 
     // Club
     showClubModal, setShowClubModal, editingClub, setEditingClub,
     clubForm, setClubForm, showViewClubModal, setShowViewClubModal,
     viewingClub, setViewingClub,
-    clubErrors, setClubErrors, 
+    clubErrors, setClubErrors,
 
     showMemberModal, setShowMemberModal, editingMember, setEditingMember,
     memberForm, setMemberForm, viewingMember, setViewingMember,
-    showViewMemberModal, setShowViewMemberModal, memberErrors, setMemberErrors
+    showViewMemberModal, setShowViewMemberModal, memberErrors, setMemberErrors,
+
+    showEventModal, setShowEventModal, editingEvent, setEditingEvent,
+    eventForm, setEventForm, viewingEvent, setViewingEvent,
+    showViewEventModal, setShowViewEventModal, eventErrors, setEventErrors
   };
 };

@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, Layers, ClipboardList, LayoutDashboard, LogOut } from "lucide-react";
+import { Users, Layers, ClipboardList, LayoutDashboard, LogOut, Calendar } from "lucide-react";
 import logo from "../../assets/logo.png"; // Nhớ check đường dẫn ảnh
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
@@ -8,6 +8,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     { id: "clubs", label: "Câu lạc bộ", icon: Layers },
     { id: "members", label: "Thành viên", icon: Users },
     { id: "interviews", label: "Phỏng vấn", icon: ClipboardList },
+    { id: "events", label: "Sự kiện", icon: Calendar },
   ];
 
   return (

@@ -17,6 +17,11 @@ showMemberModal, setShowMemberModal, memberForm, setMemberForm,
   editingMember, handleSaveMember, showViewMemberModal, setShowViewMemberModal,
   viewingMember, memberErrors, setMemberErrors,
 
+  // Event props:
+  showEventModal, setShowEventModal, eventForm, setEventForm,
+  editingEvent, handleSaveEvent, showViewEventModal, setShowViewEventModal,
+  viewingEvent, eventErrors, setEventErrors,
+
   // --- INTERVIEW PROPS ---
   showInterviewModal, setShowInterviewModal, interviewForm, setInterviewForm, handleSaveInterview, editingInterview,
   showViewInterviewModal, setShowViewInterviewModal, viewingInterview,
@@ -376,6 +381,96 @@ showMemberModal, setShowMemberModal, memberForm, setMemberForm,
             <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}><strong style={{ color: 'var(--text-sub)' }}>Hệ thống ID:</strong> <span>User: {viewingMember.userId} - Club: {viewingMember.clubId}</span></div>
             <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}><strong style={{ color: 'var(--text-sub)' }}>Vai trò:</strong> <span><span className={`badge ${viewingMember.memberRole === 'leader' ? 'warning' : 'primary'}`}>{viewingMember.memberRole}</span></span></div>
             <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}><strong style={{ color: 'var(--text-sub)' }}>Ngày gia nhập:</strong> <span>{viewingMember.joinAt ? new Date(viewingMember.joinAt).toLocaleString('vi-VN') : "Chưa cập nhật"}</span></div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ========================================= */}
+      {/* 4. MODALS CHO SỰ KIỆN (EVENTS)            */}
+      {/* ========================================= */}
+      
+      {/* 4.1 ADD/EDIT EVENT */}
+      {showEventModal && (
+        <Modal title={editingEvent ? "Sửa Sự kiện" : "Tạo Sự kiện mới"} onClose={() => setShowEventModal(false)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Câu lạc bộ tổ chức *</label>
+              <select className="input-control" style={{ borderColor: eventErrors?.clubId ? '#ef4444' : '', backgroundColor: editingEvent ? '#f3f4f6' : 'white', cursor: editingEvent ? 'not-allowed' : 'auto' }} value={eventForm.clubId || ""} disabled={!!editingEvent} onChange={e => { setEventForm({ ...eventForm, clubId: e.target.value }); if (eventErrors?.clubId) setEventErrors({ ...eventErrors, clubId: null }); }}>
+                <option value="">-- Chọn Câu lạc bộ --</option>
+                {clubs && clubs.map(c => <option key={c.clubId} value={c.clubId}>{c.clubName}</option>)}
+              </select>
+              {eventErrors?.clubId && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{eventErrors.clubId}</span>}
+            </div>
+
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Tên sự kiện *</label>
+              <input type="text" className="input-control" style={{ borderColor: eventErrors?.title ? '#ef4444' : '' }} placeholder="Nhập tên sự kiện..." value={eventForm.title} onChange={e => { setEventForm({ ...eventForm, title: e.target.value }); if (eventErrors?.title) setEventErrors({ ...eventErrors, title: null }); }} />
+              {eventErrors?.title && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{eventErrors.title}</span>}
+            </div>
+
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Thời gian diễn ra *</label>
+              <input type="datetime-local" className="input-control" style={{ borderColor: eventErrors?.eventDate ? '#ef4444' : '' }} value={eventForm.eventDate} onChange={e => { setEventForm({ ...eventForm, eventDate: e.target.value }); if (eventErrors?.eventDate) setEventErrors({ ...eventErrors, eventDate: null }); }} />
+              {eventErrors?.eventDate && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{eventErrors.eventDate}</span>}
+            </div>
+
+            <div style={{ display: "flex", gap: "16px" }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Phạm vi</label>
+                <select className="input-control" value={eventForm.isPrivate} onChange={e => setEventForm({ ...eventForm, isPrivate: e.target.value === 'true' })}>
+                  <option value={'true'}>Nội bộ CLB</option>
+                  <option value={'false'}>Công khai</option>
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Mức ưu tiên</label>
+                <select className="input-control" value={eventForm.priority} onChange={e => setEventForm({ ...eventForm, priority: parseInt(e.target.value) })}>
+                  <option value={1}>Thấp (Low)</option>
+                  <option value={2}>Trung bình (Medium)</option>
+                  <option value={3}>Cao (High)</option>
+                  <option value={4}>Khẩn cấp (Urgent)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Mô tả chi tiết</label>
+              <textarea className="input-control" rows={4} placeholder="Nội dung sự kiện..." value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} />
+            </div>
+            
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={handleSaveEvent}>{editingEvent ? "Cập nhật Sự kiện" : "Tạo Sự kiện"}</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* 4.2 VIEW EVENT */}
+      {showViewEventModal && viewingEvent && (
+        <Modal title="Chi tiết Sự kiện" onClose={() => setShowViewEventModal(false)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: 14 }}>
+            <h3 style={{ margin: 0, color: 'var(--primary)', fontSize: 18 }}>{viewingEvent.title}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}><strong style={{ color: 'var(--text-sub)' }}>ID Sự kiện:</strong> <span>#{viewingEvent.id}</span></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}><strong style={{ color: 'var(--text-sub)' }}>Thời gian:</strong> <span>{viewingEvent.eventDate ? new Date(viewingEvent.eventDate).toLocaleString('vi-VN') : "Chưa cập nhật"}</span></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}><strong style={{ color: 'var(--text-sub)' }}>Phạm vi:</strong> <span><span className={`badge ${viewingEvent.isPrivate ? 'warning' : 'success'}`}>{viewingEvent.isPrivate ? 'Nội bộ' : 'Công khai'}</span></span></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
+              <strong style={{ color: 'var(--text-sub)' }}>Mức ưu tiên:</strong> 
+              <span style={{ 
+                color: viewingEvent.priority === 4 ? '#ef4444' : // Khẩn cấp -> Đỏ
+                       viewingEvent.priority === 3 ? '#f59e0b' : // Cao -> Cam
+                       viewingEvent.priority === 2 ? '#3b82f6' : // Trung bình -> Xanh
+                       '#6b7280', fontWeight: 600                // Thấp -> Xám
+              }}>
+                {viewingEvent.priority === 1 ? 'Thấp' : 
+                 viewingEvent.priority === 2 ? 'Trung bình' : 
+                 viewingEvent.priority === 3 ? 'Cao' : 
+                 viewingEvent.priority === 4 ? 'Khẩn cấp' : viewingEvent.priority}
+              </span>
+            </div>
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border)' }} />
+            <div>
+              <strong style={{ color: 'var(--text-sub)', display: 'block', marginBottom: 8 }}>Mô tả:</strong>
+              <div style={{ background: '#f9fafb', padding: 12, borderRadius: 8, whiteSpace: 'pre-wrap' }}>{viewingEvent.description || "Không có mô tả"}</div>
+            </div>
           </div>
         </Modal>
       )}
