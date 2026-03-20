@@ -36,6 +36,18 @@ export const useDashboardUI = () => {
   const [showViewEventModal, setShowViewEventModal] = useState(false);
   const [eventErrors, setEventErrors] = useState({});
 
+  const [showRegModal, setShowRegModal] = useState(false);
+  const [editingReg, setEditingReg] = useState(null);
+
+  // Form có thêm cờ "isGuest" để quản lý giao diện
+  const [regForm, setRegForm] = useState({
+    eventId: "", isGuest: false, userId: "",
+    guestName: "", guestEmail: "",
+    checkedIn: false, checkName: "", isCare: 0
+  });
+  const [viewingReg, setViewingReg] = useState(null);
+  const [showViewRegModal, setShowViewRegModal] = useState(false);
+  const [regErrors, setRegErrors] = useState({});
   // --- BỘ LỌC CHUNG ---
   const [userFilterRole, setUserFilterRole] = useState("all");
 
@@ -65,6 +77,10 @@ export const useDashboardUI = () => {
 
     showEventModal, setShowEventModal, editingEvent, setEditingEvent,
     eventForm, setEventForm, viewingEvent, setViewingEvent,
-    showViewEventModal, setShowViewEventModal, eventErrors, setEventErrors
+    showViewEventModal, setShowViewEventModal, eventErrors, setEventErrors,
+
+    showRegModal, setShowRegModal, editingReg, setEditingReg,
+    regForm, setRegForm, viewingReg, setViewingReg,
+    showViewRegModal, setShowViewRegModal, regErrors, setRegErrors
   };
 };

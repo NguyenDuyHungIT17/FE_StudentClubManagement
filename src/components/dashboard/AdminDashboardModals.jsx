@@ -22,6 +22,10 @@ showMemberModal, setShowMemberModal, memberForm, setMemberForm,
   editingEvent, handleSaveEvent, showViewEventModal, setShowViewEventModal,
   viewingEvent, eventErrors, setEventErrors,
 
+  //event registration
+  showRegModal, setShowRegModal, regForm, setRegForm,
+  editingReg, handleSaveReg, showViewRegModal, setShowViewRegModal,
+  viewingReg, regErrors, setRegErrors, events, 
   // --- INTERVIEW PROPS ---
   showInterviewModal, setShowInterviewModal, interviewForm, setInterviewForm, handleSaveInterview, editingInterview,
   showViewInterviewModal, setShowViewInterviewModal, viewingInterview,
@@ -524,7 +528,165 @@ showMemberModal, setShowMemberModal, memberForm, setMemberForm,
         </Modal>
       )}
 
+      {/* ========================================= */}
+      {/* 5. MODALS CHO ĐĂNG KÝ SỰ KIỆN (REGISTRATIONS) */}
+      {/* ========================================= */}
+      
+      {/* 5.1 ADD/EDIT REGISTRATION */}
+      {showRegModal && (
+        <Modal title={editingReg ? "Cập nhật Đăng ký" : "Đăng ký Tham gia"} onClose={() => setShowRegModal(false)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            
+            {/* CHỌN SỰ KIỆN */}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Sự kiện đăng ký *</label>
+              <select className="input-control" style={{ borderColor: regErrors?.eventId ? '#ef4444' : '', backgroundColor: '#f3f4f6', cursor: 'not-allowed' }} value={regForm.eventId || ""} disabled>
+                {events && events.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
+              </select>
+            </div>
 
+            {/* TOGGLE LOẠI NGƯỜI DÙNG */}
+            <div style={{ display: 'flex', gap: 16, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
+                <input type="radio" checked={!regForm.isGuest} onChange={() => setRegForm({ ...regForm, isGuest: false, guestName: "", guestEmail: "" })} disabled={!!editingReg} />
+                Thành viên Hệ thống
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
+                <input type="radio" checked={regForm.isGuest} onChange={() => setRegForm({ ...regForm, isGuest: true, userId: "" })} disabled={!!editingReg} />
+                Khách vãng lai
+              </label>
+            </div>
+
+            {/* RENDER FORM DỰA VÀO LOẠI NGƯỜI DÙNG */}
+            {!regForm.isGuest ? (
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Chọn Tài khoản User *</label>
+                <select className="input-control" style={{ borderColor: regErrors?.userId ? '#ef4444' : '', backgroundColor: editingReg ? '#f3f4f6' : 'white' }} value={regForm.userId || ""} disabled={!!editingReg} onChange={e => { setRegForm({ ...regForm, userId: e.target.value }); if (regErrors?.userId) setRegErrors({ ...regErrors, userId: null }); }}>
+                  <option value="">-- Chọn User --</option>
+                  {users && users.map(u => <option key={u.userId} value={u.userId}>{u.fullName} ({u.email})</option>)}
+                </select>
+                {regErrors?.userId && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{regErrors.userId}</span>}
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: "12px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Tên Khách *</label>
+                  <input type="text" className="input-control" style={{ borderColor: regErrors?.guestName ? '#ef4444' : '' }} placeholder="Nhập tên..." value={regForm.guestName} onChange={e => { setRegForm({ ...regForm, guestName: e.target.value }); if (regErrors?.guestName) setRegErrors({ ...regErrors, guestName: null }); }} />
+                  {regErrors?.guestName && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{regErrors.guestName}</span>}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Email Khách *</label>
+                  <input type="email" className="input-control" style={{ borderColor: regErrors?.guestEmail ? '#ef4444' : '' }} placeholder="Nhập email..." value={regForm.guestEmail} onChange={e => { setRegForm({ ...regForm, guestEmail: e.target.value }); if (regErrors?.guestEmail) setRegErrors({ ...regErrors, guestEmail: null }); }} />
+                  {regErrors?.guestEmail && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{regErrors.guestEmail}</span>}
+                </div>
+              </div>
+            )}
+
+            {/* MỨC ĐỘ QUAN TÂM (IsCare) */}
+            <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: 'var(--text-main)' }}>
+                {/* Checkbox ánh xạ: 1 là Có quan tâm, 0 là Không */}
+                <input 
+                  type="checkbox" 
+                  checked={regForm.isCare === 1} 
+                  onChange={e => setRegForm({ ...regForm, isCare: e.target.checked ? 1 : 0 })} 
+                  style={{ width: 16, height: 16 }} 
+                />
+                Khách có quan tâm đến Sự kiện
+              </label>
+            </div>
+
+            {/* TRẠNG THÁI ĐIỂM DANH */}
+            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: regForm.checkedIn ? 8 : 0 }}>
+                <input type="checkbox" checked={regForm.checkedIn} onChange={e => setRegForm({ ...regForm, checkedIn: e.target.checked })} style={{ width: 16, height: 16 }} />
+                Xác nhận Đã tham gia (Check-in)
+              </label>
+              {regForm.checkedIn && (
+                <input type="text" className="input-control" placeholder="Ghi chú (Tên người check-in)..." value={regForm.checkName || ""} onChange={e => setRegForm({ ...regForm, checkName: e.target.value })} />
+              )}
+            </div>
+            
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={handleSaveReg}>{editingReg ? "Cập nhật Thông tin" : "Xác nhận Đăng ký"}</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* 5.2 VIEW REGISTRATION DETAILS */}
+      {showViewRegModal && viewingReg && (
+        <Modal title="Chi tiết Đăng ký Tham gia" onClose={() => setShowViewRegModal(false)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px", fontSize: 14 }}>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr' }}>
+              <strong style={{ color: 'var(--text-sub)' }}>ID Đăng ký:</strong> 
+              <span style={{ fontWeight: 600 }}>#{viewingReg.id}</span>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr' }}>
+              <strong style={{ color: 'var(--text-sub)' }}>Sự kiện:</strong> 
+              <span>{events?.find(e => e.id === viewingReg.eventId)?.title || `ID Sự kiện: ${viewingReg.eventId}`}</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr' }}>
+              <strong style={{ color: 'var(--text-sub)' }}>Loại tài khoản:</strong> 
+              <span>
+                <span className={`badge ${viewingReg.userId && viewingReg.userId > 0 ? 'primary' : 'warning'}`}>
+                  {viewingReg.userId && viewingReg.userId > 0 ? 'Thành viên Hệ thống' : 'Khách vãng lai'}
+                </span>
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr' }}>
+              <strong style={{ color: 'var(--text-sub)' }}>Người tham gia:</strong> 
+              <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
+                {viewingReg.userId && viewingReg.userId > 0 
+                  ? (users?.find(u => u.userId === viewingReg.userId)?.fullName || `User ID: ${viewingReg.userId}`) 
+                  : viewingReg.guestName}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr' }}>
+              <strong style={{ color: 'var(--text-sub)' }}>Email liên hệ:</strong> 
+              <span>
+                {viewingReg.userId && viewingReg.userId > 0 
+                  ? (users?.find(u => u.userId === viewingReg.userId)?.email || "N/A") 
+                  : viewingReg.guestEmail}
+              </span>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '4px 0' }} />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr' }}>
+              <strong style={{ color: 'var(--text-sub)' }}>Mức độ quan tâm:</strong> 
+              <span>{viewingReg.isCare === 1 ? <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Có quan tâm</span> : 'Không quan tâm'}</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr' }}>
+              <strong style={{ color: 'var(--text-sub)' }}>Trạng thái:</strong> 
+              <span>
+                <span className={`badge ${viewingReg.checkedIn ? 'success' : 'error'}`}>
+                  {viewingReg.checkedIn ? 'Đã đến (Check-in)' : 'Chưa đến'}
+                </span>
+              </span>
+            </div>
+
+            {viewingReg.checkedIn && viewingReg.checkName && (
+              <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr' }}>
+                <strong style={{ color: 'var(--text-sub)' }}>Người điểm danh:</strong> 
+                <span>{viewingReg.checkName}</span>
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr' }}>
+              <strong style={{ color: 'var(--text-sub)' }}>Ngày đăng ký:</strong> 
+              <span>{viewingReg.registeredAt ? new Date(viewingReg.registeredAt).toLocaleString('vi-VN') : "Chưa cập nhật"}</span>
+            </div>
+
+          </div>
+        </Modal>
+      )}
+
+      {/* VIEW MODAL (Cơ bản tương tự các view khác) */}
       {/* ==================================================================================
           5. EMAIL & RESULT MODALS
          ================================================================================== */}

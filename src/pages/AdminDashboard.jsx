@@ -9,7 +9,8 @@ import { useClubs } from "../hooks/useClubs";
 import { useDashboardUI } from "../hooks/useDashboardUI";
 import { useEvents } from "../hooks/useEvents";
 import EventsTable from "../components/tables/EventsTable";
-
+import { useEventRegistrations } from "../hooks/useEventRegistrations";
+import EventRegistrationsTable from "../components/tables/EventRegistrationsTable";
 import "../styles/UniClubsTheme.css";
 
 // Components Layout
@@ -33,6 +34,14 @@ const DashboardContent = () => {
     page: userPage, setPage: setUserPage,
     paginationMeta: userPaginationMeta
   } = useUsers();
+
+  const {
+    registrations, createRegistration, updateRegistration, deleteRegistration,
+    selectedEventId, setSelectedEventId,
+    keyword: regKeyword, setKeyword: setRegKeyword,
+    page: regPage, setPage: setRegPage,
+    paginationMeta: regPaginationMeta
+  } = useEventRegistrations();
 
   const {
     clubs, createClub, updateClub, deleteClub,
@@ -76,9 +85,13 @@ const DashboardContent = () => {
 
     showEventModal, setShowEventModal, editingEvent, setEditingEvent,
     eventForm, setEventForm, viewingEvent, setViewingEvent,
-    showViewEventModal, setShowViewEventModal, 
+    showViewEventModal, setShowViewEventModal,
     eventErrors, setEventErrors,
 
+    showRegModal, setShowRegModal, editingReg, setEditingReg,
+    regForm, setRegForm, viewingReg, setViewingReg,
+    showViewRegModal, setShowViewRegModal, regErrors, setRegErrors,
+    
     clubErrors, setClubErrors,
     userErrors, setUserErrors
   } = useDashboardUI();
@@ -397,7 +410,73 @@ const DashboardContent = () => {
 
   const openViewEvent = (ev) => { setViewingEvent(ev); setShowViewEventModal(true); };
   const openViewMember = (m) => { setViewingMember(m); setShowViewMemberModal(true); };
+  // =========================================================
+  // --- CÁC HÀM XỬ LÝ SỰ KIỆN CHO EVENT REGISTRATIONS ---
+  // =========================================================
+  const openAddReg = () => {
+    setEditingReg(null);
+    setRegForm({ eventId: selectedEventId, isGuest: false, userId: "", guestName: "", guestEmail: "", checkedIn: false, checkName: "", isCare: 0 });
+    setRegErrors({});
+    setShowRegModal(true);
+  };
 
+  const openEditReg = (r) => {
+    setEditingReg(r.id);
+    const isGuest = !r.userId || r.userId === 0;
+    setRegForm({
+      eventId: r.eventId ? r.eventId.toString() : selectedEventId,
+      isGuest: isGuest,
+      userId: r.userId ? r.userId.toString() : "",
+      guestName: r.guestName || "",
+      guestEmail: r.guestEmail || "",
+      checkedIn: r.checkedIn || false,
+      checkName: r.checkName || "",
+      isCare: r.isCare || 0
+    });
+    setRegErrors({});
+    setShowRegModal(true);
+  };
+
+  const handleSaveReg = async () => {
+    let errors = {};
+    if (!regForm.eventId) errors.eventId = "Lỗi: Chưa xác định được Sự kiện.";
+
+    if (regForm.isGuest) {
+      if (!regForm.guestName?.trim()) errors.guestName = "Vui lòng nhập tên Khách";
+      if (!regForm.guestEmail?.trim()) errors.guestEmail = "Vui lòng nhập Email Khách";
+    } else {
+      if (!regForm.userId) errors.userId = "Vui lòng chọn Tài khoản User";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setRegErrors(errors); return;
+    }
+    setRegErrors({});
+
+    const payload = {
+      eventId: parseInt(regForm.eventId),
+      userId: regForm.isGuest ? 0 : parseInt(regForm.userId),
+      guestName: regForm.isGuest ? regForm.guestName.trim() : null,
+      guestEmail: regForm.isGuest ? regForm.guestEmail.trim() : null,
+      checkedIn: regForm.checkedIn,
+      checkName: regForm.checkedIn ? regForm.checkName?.trim() : null,
+      isCare: regForm.isCare
+    };
+
+    const result = editingReg ? await updateRegistration(editingReg, payload) : await createRegistration(payload);
+
+    if (result && result.success) setShowRegModal(false);
+    else if (result.validationErrors) setRegErrors(result.validationErrors);
+    else alert(result?.message || "Lỗi thao tác!");
+  };
+
+  const handleDeleteReg = async (id) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa đăng ký này?")) {
+      const result = await deleteRegistration(id);
+      if (!result.success) alert(result?.message || "Xóa thất bại!");
+    }
+  };
+  const openViewReg = (r) => { setViewingReg(r); setShowViewRegModal(true); };
   // =========================================================
   // GIAO DIỆN CHÍNH
   // =========================================================
@@ -473,7 +552,7 @@ const DashboardContent = () => {
             />
           )}
           {activeTab === "interviews" && <div><h1>Đang chờ code Hook Phỏng vấn...</h1></div>}
-          
+
           {/* TAB EVENTS */}
           {activeTab === "events" && (
             <EventsTable
@@ -490,11 +569,34 @@ const DashboardContent = () => {
               onFilterClubChange={setEventFilterClub}
               filterIsPrivate={eventFilterIsPrivate}
               onFilterIsPrivateChange={setEventFilterIsPrivate}
-              
+
               onAdd={openAddEvent}
               onEdit={openEditEvent}
               onDelete={handleDeleteEvent}
               onView={openViewEvent}
+            />
+          )}
+
+          {/* TAB EVENT REGISTRATIONS */}
+          {activeTab === "event_registrations" && (
+            <EventRegistrationsTable
+              registrations={registrations}
+              events={events} // Truyền events vào đây để làm list dropdown
+              users={users}
+
+              selectedEventId={selectedEventId}
+              onEventChange={setSelectedEventId}
+
+              keyword={regKeyword}
+              onSearch={setRegKeyword}
+              page={regPage}
+              totalPages={regPaginationMeta.TotalPages}
+              onPageChange={setRegPage}
+              
+              onAdd={openAddReg}
+              onEdit={openEditReg}
+              onDelete={handleDeleteReg}
+              onView={openViewReg}
             />
           )}
         </div>
@@ -530,6 +632,14 @@ const DashboardContent = () => {
         showViewEventModal={showViewEventModal} setShowViewEventModal={setShowViewEventModal}
         viewingEvent={viewingEvent}
         eventErrors={eventErrors} setEventErrors={setEventErrors}
+
+        showRegModal={showRegModal} setShowRegModal={setShowRegModal}
+        regForm={regForm} setRegForm={setRegForm}
+        editingReg={editingReg} handleSaveReg={handleSaveReg}
+        showViewRegModal={showViewRegModal} setShowViewRegModal={setShowViewRegModal}
+        viewingReg={viewingReg}
+        regErrors={regErrors} setRegErrors={setRegErrors}
+        events={events}
 
         users={users}
         clubs={clubs}
