@@ -1,17 +1,54 @@
-import { apiRequest } from './api';
+import { apiRequest, API_BASE_URL } from './api';
 
 export const interviewService = {
-  getByClub: (clubId) => apiRequest(`/Interviews/club/${clubId}`),
+  getAll: async (keyword = "", clubId = "all", campaignId = "all", status = "all", result = "all", pageNumber = 1, pageSize = 100) => {
+    const token = localStorage.getItem("token");
+    const query = new URLSearchParams();
+    if (keyword) query.append("keyword", keyword);
+    if (clubId && clubId !== "all") query.append("clubId", clubId);
+    if (campaignId && campaignId !== "all") query.append("campaignId", campaignId);
+    if (status && status !== "all") query.append("status", status);
+    if (result && result !== "all") query.append("result", result);
+    query.append("pageNumber", pageNumber);
+    query.append("pageSize", pageSize);
+
+    const response = await fetch(`${API_BASE_URL}/interviews?${query.toString()}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+    });
+
+    // 1. ĐỌC PHÂN TRANG TỪ HEADER
+    let paginationMeta = { PageNumber: 1, TotalPages: 1, TotalCount: 0 };
+    const paginationHeader = response.headers.get("X-Pagination");
+    if (paginationHeader) {
+      try {
+        const parsed = JSON.parse(paginationHeader);
+        paginationMeta = { 
+          PageNumber: parsed.PageNumber || parsed.pageNumber || 1, 
+          TotalPages: parsed.TotalPages || parsed.totalPages || 1, 
+          TotalCount: parsed.TotalCount || parsed.totalCount || 0 
+        };
+      } catch(e) {}
+    }
+
+    const resData = await response.json().catch(() => null);
+    if (!response.ok) throw new Error("Lỗi lấy dữ liệu phỏng vấn");
+
+    return {
+      // 2. LẤY MẢNG DỮ LIỆU TỪ TRƯỜNG .data
+      data: resData?.data || resData?.items || [],
+      pagination: paginationMeta
+    };
+  },
   
-  create: (interviewData) => apiRequest('/Interviews', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(interviewData),
-  }),
-  
-  update: (interviewId, interviewData) => apiRequest(`/Interviews/${interviewId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(interviewData),
-  }),
+  getById: (id) => apiRequest(`/interviews/${id}`, { method: 'GET' }),
+  createWalkIn: (data) => apiRequest('/interviews/walkin', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => apiRequest(`/interviews/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => apiRequest(`/interviews/${id}`, { method: 'DELETE' }),
+  checkIn: (id) => apiRequest(`/interviews/${id}/checkin`, { method: 'POST', body: JSON.stringify({}) }),
+  start: (id, data) => apiRequest(`/interviews/${id}/start`, { method: 'POST', body: JSON.stringify(data) }),
+  finish: (id, data) => apiRequest(`/interviews/${id}/finish`, { method: 'POST', body: JSON.stringify(data) }),
+  noShow: (id) => apiRequest(`/interviews/${id}/noshow`, { method: 'POST', body: JSON.stringify({}) }),
+  cancel: (id) => apiRequest(`/interviews/${id}/cancel`, { method: 'POST', body: JSON.stringify({}) }),
+  updateResultAfter: (id, data) => apiRequest(`/interviews/${id}/after-result`, { method: 'PUT', body: JSON.stringify(data) }),
+  sendEmail: (clubId, resultType) => apiRequest(`/interviews/club/${clubId}/send-email/${resultType}`, { method: 'POST', body: JSON.stringify({}) }),
 };

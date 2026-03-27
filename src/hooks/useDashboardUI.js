@@ -1,26 +1,26 @@
-// src/hooks/useDashboardUI.js
 import { useState } from "react";
 
 export const useDashboardUI = () => {
   const [activeTab, setActiveTab] = useState("users");
 
-  // --- TRẠNG THÁI FORM USER ---
+  // User
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [userErrors, setUserErrors] = useState({});
   const [userForm, setUserForm] = useState({ fullName: "", email: "", password: "", role: "member", isActive: 1 });
   const [showViewUserModal, setShowViewUserModal] = useState(false);
   const [viewingUser, setViewingUser] = useState(null);
+  const [userFilterRole, setUserFilterRole] = useState("all");
 
-  // --- TRẠNG THÁI FORM CLUB (MỚI THÊM) ---
+  // Club
   const [showClubModal, setShowClubModal] = useState(false);
   const [editingClub, setEditingClub] = useState(null);
-  // Thêm 'title' vào state khởi tạo
   const [clubForm, setClubForm] = useState({ clubName: "", title: "", description: "", leaderId: "" });
   const [showViewClubModal, setShowViewClubModal] = useState(false);
   const [viewingClub, setViewingClub] = useState(null);
   const [clubErrors, setClubErrors] = useState({});
 
+  // Member
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
   const [memberForm, setMemberForm] = useState({ clubId: "", userId: "", memberRole: "member", joinAt: "" });
@@ -28,7 +28,7 @@ export const useDashboardUI = () => {
   const [showViewMemberModal, setShowViewMemberModal] = useState(false);
   const [memberErrors, setMemberErrors] = useState({});
 
-  // --- THÊM STATE CHO SỰ KIỆN (EVENTS) ---
+  // Event
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [eventForm, setEventForm] = useState({ clubId: "", title: "", description: "", eventDate: "", isPrivate: true, priority: 0 });
@@ -36,51 +36,53 @@ export const useDashboardUI = () => {
   const [showViewEventModal, setShowViewEventModal] = useState(false);
   const [eventErrors, setEventErrors] = useState({});
 
+  // Event Registration
   const [showRegModal, setShowRegModal] = useState(false);
   const [editingReg, setEditingReg] = useState(null);
-
-  // Form có thêm cờ "isGuest" để quản lý giao diện
-  const [regForm, setRegForm] = useState({
-    eventId: "", isGuest: false, userId: "",
-    guestName: "", guestEmail: "",
-    checkedIn: false, checkName: "", isCare: 0
-  });
+  const [regForm, setRegForm] = useState({ eventId: "", isGuest: false, userId: "", guestName: "", guestEmail: "", checkedIn: false, checkName: "", isCare: 0 });
   const [viewingReg, setViewingReg] = useState(null);
   const [showViewRegModal, setShowViewRegModal] = useState(false);
   const [regErrors, setRegErrors] = useState({});
-  // --- BỘ LỌC CHUNG ---
-  const [userFilterRole, setUserFilterRole] = useState("all");
+
+  // 👉 CAMPAIGN (ĐỢT TUYỂN) - THÊM VÀO ĐÂY
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState(null);
+  const [campaignForm, setCampaignForm] = useState({ clubId: "", title: "", startDate: "", endDate: "", isActive: true });
+  const [showViewCampaignModal, setShowViewCampaignModal] = useState(false);
+  const [viewingCampaign, setViewingCampaign] = useState(null);
+  const [campaignErrors, setCampaignErrors] = useState({});
+
+  // Interviews
+  const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [editingInterview, setEditingInterview] = useState(null);
+  const [interviewForm, setInterviewForm] = useState({ clubId: "", campaignId: "", applicantName: "", applicantEmail: "", applicantPhone: "", interviewDate: "", cvUrl: "", note: "" });
+  const [interviewErrors, setInterviewErrors] = useState({});
+
+  const [showStartModal, setShowStartModal] = useState(false);
+  const [startForm, setStartForm] = useState({ interviewId: null, evaluatorId: "", evaluatorName: "" });
+  const [startErrors, setStartErrors] = useState({});
+
+  const [showFinishModal, setShowFinishModal] = useState(false);
+  const [finishForm, setFinishForm] = useState({ interviewId: null, result: 0, evaluation: "", note: "", applicantName: "", applicantEmail: "", applicantPhone: "", cvUrl: "" });
+  const [finishErrors, setFinishErrors] = useState({});
+
+  const [viewingInterview, setViewingInterview] = useState(null);
+  const [showViewInterviewModal, setShowViewInterviewModal] = useState(false);
 
   return {
     activeTab, setActiveTab,
+    showUserModal, setShowUserModal, editingUser, setEditingUser, userForm, setUserForm, userErrors, setUserErrors, showViewUserModal, setShowViewUserModal, viewingUser, setViewingUser, userFilterRole, setUserFilterRole,
+    showClubModal, setShowClubModal, editingClub, setEditingClub, clubForm, setClubForm, showViewClubModal, setShowViewClubModal, viewingClub, setViewingClub, clubErrors, setClubErrors,
+    showMemberModal, setShowMemberModal, editingMember, setEditingMember, memberForm, setMemberForm, viewingMember, setViewingMember, showViewMemberModal, setShowViewMemberModal, memberErrors, setMemberErrors,
+    showEventModal, setShowEventModal, editingEvent, setEditingEvent, eventForm, setEventForm, viewingEvent, setViewingEvent, showViewEventModal, setShowViewEventModal, eventErrors, setEventErrors,
+    showRegModal, setShowRegModal, editingReg, setEditingReg, regForm, setRegForm, viewingReg, setViewingReg, showViewRegModal, setShowViewRegModal, regErrors, setRegErrors,
+    
+    // Xuất State Campaign ra
+    showCampaignModal, setShowCampaignModal, editingCampaign, setEditingCampaign, campaignForm, setCampaignForm, showViewCampaignModal, setShowViewCampaignModal, viewingCampaign, setViewingCampaign, campaignErrors, setCampaignErrors,
 
-    showUserModal, setShowUserModal,
-    editingUser, setEditingUser,
-    userForm, setUserForm,
-
-    userErrors, setUserErrors,
-
-    showViewUserModal, setShowViewUserModal,
-    viewingUser, setViewingUser,
-
-    userFilterRole, setUserFilterRole,
-
-    // Club
-    showClubModal, setShowClubModal, editingClub, setEditingClub,
-    clubForm, setClubForm, showViewClubModal, setShowViewClubModal,
-    viewingClub, setViewingClub,
-    clubErrors, setClubErrors,
-
-    showMemberModal, setShowMemberModal, editingMember, setEditingMember,
-    memberForm, setMemberForm, viewingMember, setViewingMember,
-    showViewMemberModal, setShowViewMemberModal, memberErrors, setMemberErrors,
-
-    showEventModal, setShowEventModal, editingEvent, setEditingEvent,
-    eventForm, setEventForm, viewingEvent, setViewingEvent,
-    showViewEventModal, setShowViewEventModal, eventErrors, setEventErrors,
-
-    showRegModal, setShowRegModal, editingReg, setEditingReg,
-    regForm, setRegForm, viewingReg, setViewingReg,
-    showViewRegModal, setShowViewRegModal, regErrors, setRegErrors
+    showInterviewModal, setShowInterviewModal, editingInterview, setEditingInterview, interviewForm, setInterviewForm, interviewErrors, setInterviewErrors,
+    showStartModal, setShowStartModal, startForm, setStartForm, startErrors, setStartErrors,
+    showFinishModal, setShowFinishModal, finishForm, setFinishForm, finishErrors, setFinishErrors,
+    viewingInterview, setViewingInterview, showViewInterviewModal, setShowViewInterviewModal
   };
 };

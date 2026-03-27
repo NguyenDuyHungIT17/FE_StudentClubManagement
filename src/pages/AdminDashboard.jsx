@@ -1,16 +1,18 @@
 // src/pages/AdminDashboard.jsx
-import React from "react";
+import React, { useState } from "react";
 import { ThemeProvider } from "../context/ThemeContext";
-import { useMembers } from "../hooks/useMembers";
-import MembersTable from "../components/tables/MembersTable";
+
 // Import Hooks chuẩn
 import { useUsers } from "../hooks/useUsers";
 import { useClubs } from "../hooks/useClubs";
-import { useDashboardUI } from "../hooks/useDashboardUI";
+import { useMembers } from "../hooks/useMembers";
 import { useEvents } from "../hooks/useEvents";
-import EventsTable from "../components/tables/EventsTable";
 import { useEventRegistrations } from "../hooks/useEventRegistrations";
-import EventRegistrationsTable from "../components/tables/EventRegistrationsTable";
+import { useCampaigns } from "../hooks/useCampaigns"; // Đảm bảo import Hook này
+import { useInterviews } from "../hooks/useInterviews";
+import { useDashboardUI } from "../hooks/useDashboardUI";
+
+// Styles
 import "../styles/UniClubsTheme.css";
 
 // Components Layout
@@ -18,9 +20,14 @@ import Sidebar from "../components/common/Sidebar";
 import TopHeader from "../components/common/TopHeader";
 import StatsSection from "../components/dashboard/StatsSection";
 
-// Components Tables
+// Components Tables & Boards
 import UsersTable from "../components/tables/UsersTable";
 import ClubsTable from "../components/tables/ClubsTable";
+import MembersTable from "../components/tables/MembersTable";
+import EventsTable from "../components/tables/EventsTable";
+import EventRegistrationsTable from "../components/tables/EventRegistrationsTable";
+import CampaignsTable from "../components/tables/CampaignsTable"; // Đảm bảo import Component này
+import InterviewBoard from "../components/interviews/InterviewBoard";
 
 // Component Modals
 import AdminDashboardModals from "../components/dashboard/AdminDashboardModals";
@@ -65,6 +72,25 @@ const DashboardContent = () => {
     paginationMeta: eventPaginationMeta
   } = useEvents();
 
+  const {
+    campaigns, createCampaign, updateCampaign, deleteCampaign,
+    keyword: campKeyword, setKeyword: setCampKeyword,
+    filterClub: campFilterClub, setFilterClub: setCampFilterClub,
+    filterIsActive: campFilterIsActive, setFilterIsActive: setCampFilterIsActive,
+    page: campPage, setPage: setCampPage, paginationMeta: campPaginationMeta
+  } = useCampaigns();
+
+  const {
+    interviews, keyword: intKeyword, setKeyword: setIntKeyword, filterClub: intFilterClub, setFilterClub: setIntFilterClub,
+    filterStatus: intFilterStatus, setFilterStatus: setIntFilterStatus, filterResult: intFilterResult, setFilterResult: setIntFilterResult,
+    createWalkIn, updateInterview, deleteInterview, checkIn, startInterview, finishInterview, noShow, cancelInterview, sendEmails,
+    filterCampaign, setFilterCampaign,
+    updateResultAfterInterview, getInterviewById
+  } = useInterviews();
+
+  // State cục bộ cho Interview
+  const [isUpdatingResult, setIsUpdatingResult] = useState(false);
+
   // 2. LẤY STATE GIAO DIỆN TỪ HOOK UI
   const {
     activeTab, setActiveTab,
@@ -79,18 +105,32 @@ const DashboardContent = () => {
     clubForm, setClubForm, viewingClub, setViewingClub,
     showViewClubModal, setShowViewClubModal,
 
+    // States cho Member
     showMemberModal, setShowMemberModal, editingMember, setEditingMember,
     memberForm, setMemberForm, viewingMember, setViewingMember,
     showViewMemberModal, setShowViewMemberModal, memberErrors, setMemberErrors,
 
+    // States cho Event
     showEventModal, setShowEventModal, editingEvent, setEditingEvent,
     eventForm, setEventForm, viewingEvent, setViewingEvent,
     showViewEventModal, setShowViewEventModal,
     eventErrors, setEventErrors,
 
+    // States cho Event Registrations
     showRegModal, setShowRegModal, editingReg, setEditingReg,
     regForm, setRegForm, viewingReg, setViewingReg,
     showViewRegModal, setShowViewRegModal, regErrors, setRegErrors,
+    
+    // States cho Campaigns
+    showCampaignModal, setShowCampaignModal, editingCampaign, setEditingCampaign, 
+    campaignForm, setCampaignForm, showViewCampaignModal, setShowViewCampaignModal, 
+    viewingCampaign, setViewingCampaign, campaignErrors, setCampaignErrors,
+
+    // States cho Interviews
+    showInterviewModal, setShowInterviewModal, editingInterview, setEditingInterview, interviewForm, setInterviewForm, interviewErrors, setInterviewErrors,
+    showStartModal, setShowStartModal, startForm, setStartForm, startErrors, setStartErrors,
+    showFinishModal, setShowFinishModal, finishForm, setFinishForm, finishErrors, setFinishErrors,
+    viewingInterview, setViewingInterview, showViewInterviewModal, setShowViewInterviewModal,
     
     clubErrors, setClubErrors,
     userErrors, setUserErrors
@@ -144,7 +184,6 @@ const DashboardContent = () => {
       return;
     }
 
-    // Nếu form hợp lệ, xóa lỗi cũ
     setUserErrors({});
 
     if (editingUser) {
@@ -189,7 +228,6 @@ const DashboardContent = () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa tài khoản này?")) {
       const result = await deleteUser(id);
       if (result && result.success) {
-        // alert(result.message); 
       } else if (result.validationErrors) {
         const errorMessages = Object.values(result.validationErrors).join("\n");
         alert("Không thể xóa:\n" + errorMessages);
@@ -264,7 +302,6 @@ const DashboardContent = () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa Câu lạc bộ này?")) {
       const result = await deleteClub(id);
       if (result && result.success) {
-        // alert(result.message);
       } else if (result.validationErrors) {
         const errorMessages = Object.values(result.validationErrors).join("\n");
         alert("Không thể xóa:\n" + errorMessages);
@@ -292,7 +329,6 @@ const DashboardContent = () => {
     const formattedDate = m.joinAt ? m.joinAt.slice(0, 16) : "";
 
     setMemberForm({
-      // Ép kiểu sang chuỗi để thẻ Select so khớp chính xác
       clubId: m.clubId ? m.clubId.toString() : "",
       userId: m.userId ? m.userId.toString() : "",
       memberRole: m.memberRole || "member",
@@ -345,6 +381,8 @@ const DashboardContent = () => {
       }
     }
   };
+
+  const openViewMember = (m) => { setViewingMember(m); setShowViewMemberModal(true); };
 
   // =========================================================
   // --- CÁC HÀM XỬ LÝ SỰ KIỆN CHO EVENTS ---
@@ -409,7 +447,7 @@ const DashboardContent = () => {
   };
 
   const openViewEvent = (ev) => { setViewingEvent(ev); setShowViewEventModal(true); };
-  const openViewMember = (m) => { setViewingMember(m); setShowViewMemberModal(true); };
+
   // =========================================================
   // --- CÁC HÀM XỬ LÝ SỰ KIỆN CHO EVENT REGISTRATIONS ---
   // =========================================================
@@ -477,6 +515,218 @@ const DashboardContent = () => {
     }
   };
   const openViewReg = (r) => { setViewingReg(r); setShowViewRegModal(true); };
+
+  // =========================================================
+  // --- CÁC HÀM XỬ LÝ SỰ KIỆN CHO CAMPAIGNS ---
+  // =========================================================
+  const openAddCampaign = () => {
+    setEditingCampaign(null);
+    setCampaignForm({ clubId: "", title: "", startDate: "", endDate: "", isActive: true });
+    setCampaignErrors({});
+    setShowCampaignModal(true);
+  };
+
+  const openEditCampaign = (camp) => {
+    setEditingCampaign(camp.campaignId);
+    setCampaignForm({
+      clubId: camp.clubId,
+      title: camp.title,
+      startDate: camp.startDate ? camp.startDate.split('T')[0] : "",
+      endDate: camp.endDate ? camp.endDate.split('T')[0] : "",
+      isActive: camp.isActive
+    });
+    setCampaignErrors({});
+    setShowCampaignModal(true);
+  };
+
+  const handleSaveCampaign = async () => {
+    let errors = {};
+    if (!campaignForm.clubId) errors.clubId = "Vui lòng chọn Câu lạc bộ";
+    if (!campaignForm.title?.trim()) errors.title = "Vui lòng nhập Tên đợt tuyển";
+
+    if (Object.keys(errors).length > 0) { setCampaignErrors(errors); return; }
+    setCampaignErrors({});
+
+    const payload = {
+      clubId: parseInt(campaignForm.clubId),
+      title: campaignForm.title.trim(),
+      startDate: campaignForm.startDate ? new Date(campaignForm.startDate).toISOString() : null,
+      endDate: campaignForm.endDate ? new Date(campaignForm.endDate).toISOString() : null,
+      isActive: campaignForm.isActive === true || campaignForm.isActive === "true"
+    };
+
+    const result = editingCampaign ? await updateCampaign(editingCampaign, payload) : await createCampaign(payload);
+    if (result.success) setShowCampaignModal(false);
+    else if (result.validationErrors) setCampaignErrors(result.validationErrors);
+    else alert(result.message);
+  };
+
+  const handleDeleteCampaign = async (id) => {
+    if (window.confirm("Xóa đợt tuyển này?")) {
+      const res = await deleteCampaign(id);
+      if (!res.success) alert(res.message);
+    }
+  };
+
+  const openViewCampaign = (camp) => { setViewingCampaign(camp); setShowViewCampaignModal(true); };
+
+  // =========================================================
+  // --- CÁC HÀM XỬ LÝ SỰ KIỆN CHO INTERVIEWS ---
+  // =========================================================
+  const openAddWalkIn = () => {
+    setEditingInterview(null);
+    setInterviewForm({ clubId: "", campaignId: "", applicantName: "", applicantEmail: "", applicantPhone: "", interviewDate: "", cvUrl: "", note: "" });
+    setInterviewErrors({});
+    setShowInterviewModal(true);
+  };
+
+  const openEditInterview = (item) => {
+    setEditingInterview(item.interviewId);
+    setInterviewForm({
+      clubId: item.clubId ? item.clubId.toString() : "",
+      campaignId: item.campaignId ? item.campaignId.toString() : "",
+      applicantName: item.applicantName || "",
+      applicantEmail: item.applicantEmail || "",
+      applicantPhone: item.applicantPhone || "",
+      interviewDate: item.interviewDate ? item.interviewDate.slice(0, 16) : "",
+      cvUrl: item.cvUrl || "",
+      note: item.note || ""
+    });
+    setInterviewErrors({});
+    setShowInterviewModal(true);
+  };
+
+  const handleSaveInterview = async () => {
+    let errors = {};
+    if (!editingInterview && !interviewForm.clubId) errors.clubId = "Chọn Câu lạc bộ";
+    if (!interviewForm.applicantName?.trim()) errors.applicantName = "Nhập tên ứng viên";
+    
+    if (Object.keys(errors).length > 0) { setInterviewErrors(errors); return; }
+    setInterviewErrors({});
+
+    const payload = {
+      applicantName: interviewForm.applicantName.trim(),
+      applicantEmail: interviewForm.applicantEmail || null,
+      applicantPhone: interviewForm.applicantPhone || null,
+      interviewDate: interviewForm.interviewDate ? new Date(interviewForm.interviewDate).toISOString() : null,
+      cvUrl: interviewForm.cvUrl || null,
+      note: interviewForm.note || null
+    };
+
+    let result;
+    if (editingInterview) {
+      result = await updateInterview(editingInterview, payload);
+    } else {
+      payload.clubId = parseInt(interviewForm.clubId);
+      if (interviewForm.campaignId) payload.campaignId = parseInt(interviewForm.campaignId);
+      result = await createWalkIn(payload);
+    }
+
+    if (result.success) setShowInterviewModal(false);
+    else if (result.validationErrors) setInterviewErrors(result.validationErrors);
+    else alert(result.message);
+  };
+
+  const handleDeleteInterview = async (id) => {
+    if (window.confirm("Xóa hồ sơ phỏng vấn này?")) {
+      const res = await deleteInterview(id);
+      if (!res.success) alert(res.message || "Xóa thất bại");
+    }
+  };
+
+  const handleCheckIn = async (id) => {
+    if(window.confirm("Xác nhận ứng viên đã đến check-in?")) await checkIn(id);
+  };
+  
+  const handleNoShow = async (id) => {
+    if(window.confirm("Đánh dấu ứng viên KHÔNG ĐẾN?")) await noShow(id);
+  };
+
+  const handleCancel = async (id) => {
+    if(window.confirm("Bạn muốn HỦY lịch phỏng vấn này?")) await cancelInterview(id);
+  };
+
+  const openStart = (item) => {
+    setStartForm({ interviewId: item.interviewId, evaluatorId: "", evaluatorName: "" });
+    setStartErrors({});
+    setShowStartModal(true);
+  };
+
+  const handleStartInterview = async () => {
+    if(!startForm.evaluatorId) { setStartErrors({ evaluatorId: "Vui lòng chọn Giám khảo" }); return; }
+    const res = await startInterview(startForm.interviewId, { evaluatorId: startForm.evaluatorId, evaluatorName: startForm.evaluatorName });
+    if(res.success) setShowStartModal(false); else alert(res.message);
+  };
+
+  // Mở Đánh giá Lần đầu (Từ Kanban)
+  const openFinish = (item) => {
+    setIsUpdatingResult(false);
+    setFinishForm({ 
+      interviewId: item.interviewId, 
+      result: item.result || 0,
+      evaluation: item.evaluation || "", 
+      note: item.note || "",
+      applicantName: item.applicantName,
+      applicantEmail: item.applicantEmail,
+      applicantPhone: item.applicantPhone,
+      cvUrl: item.cvUrl
+    });
+    setShowFinishModal(true);
+  };
+
+  // Mở Cập nhật Lại Đánh giá (Từ Bảng Lịch sử)
+  const openUpdateResult = (item) => {
+    setIsUpdatingResult(true);
+    setFinishForm({ 
+      interviewId: item.interviewId, 
+      result: item.result || 0,
+      evaluation: item.evaluation || "", 
+      note: item.note || "",
+      applicantName: item.applicantName,
+      applicantEmail: item.applicantEmail,
+      applicantPhone: item.applicantPhone,
+      cvUrl: item.cvUrl
+    });
+    setShowFinishModal(true);
+  };
+
+  // Gộp chung hàm Submit
+  const handleFinishOrUpdateInterview = async () => {
+    const payload = { 
+      result: finishForm.result, 
+      evaluation: finishForm.evaluation || null, 
+      note: finishForm.note || null 
+    };
+    
+    let res;
+    if (isUpdatingResult) {
+      res = await updateResultAfterInterview(finishForm.interviewId, payload);
+    } else {
+      res = await finishInterview(finishForm.interviewId, payload);
+    }
+    
+    if(res.success) setShowFinishModal(false); else alert(res.message);
+  };
+
+  const handleSendEmail = async () => {
+    if (!intFilterClub || intFilterClub === "all") { alert("Vui lòng BỘ LỌC Câu lạc bộ trước khi gửi Email chung!"); return; }
+    const type = window.prompt("Nhập 1 để gửi email Pass, 2 để gửi email Fail:");
+    if(type === "1" || type === "2") {
+      const res = await sendEmails(parseInt(intFilterClub), parseInt(type));
+      alert(res.success ? "Đã gửi Email thành công" : res.message);
+    }
+  };
+
+  const openViewInterview = async (item) => {
+    const res = await getInterviewById(item.interviewId);
+    if (res.success) {
+      setViewingInterview(res.data);
+      setShowViewInterviewModal(true);
+    } else {
+      alert("Lỗi khi tải chi tiết: " + res.message);
+    }
+  };
+
   // =========================================================
   // GIAO DIỆN CHÍNH
   // =========================================================
@@ -490,20 +740,20 @@ const DashboardContent = () => {
         <div className="scrollable-area">
           <TopHeader title={activeTab} />
 
-          {/* Hiển thị số lượng dựa trên tổng số bản ghi từ Meta Phân Trang */}
-          <StatsSection usersCount={userPaginationMeta.TotalCount || 0} clubsCount={paginationMeta.TotalCount || 0} />
+          {/* Ẩn StatsSection khi ở tab interviews hoặc campaigns */}
+          {activeTab !== "interviews" && activeTab !== "campaigns" && (
+            <StatsSection usersCount={userPaginationMeta.TotalCount || 0} clubsCount={paginationMeta.TotalCount || 0} />
+          )}
 
           {/* TAB USERS */}
           {activeTab === "users" && (
             <UsersTable
               users={users}
-
               keyword={userKeyword}
               onSearch={setUserKeyword}
               page={userPage}
               totalPages={userPaginationMeta.TotalPages}
               onPageChange={setUserPage}
-
               filterRole={userFilterRole}
               onFilterChange={setUserFilterRole}
               onAdd={openAddUser}
@@ -535,41 +785,34 @@ const DashboardContent = () => {
               members={members}
               clubs={clubs}
               users={users}
-
               page={memberPage}
               totalPages={memberPaginationMeta.TotalPages}
               onPageChange={setMemberPage}
-
               filterClub={memberFilterClub}
               onFilterClubChange={setMemberFilterClub}
               filterRole={memberFilterRole}
               onFilterRoleChange={setMemberFilterRole}
-
               onAdd={openAddMember}
               onEdit={openEditMember}
               onDelete={handleDeleteMember}
               onView={openViewMember}
             />
           )}
-          {activeTab === "interviews" && <div><h1>Đang chờ code Hook Phỏng vấn...</h1></div>}
-
+          
           {/* TAB EVENTS */}
           {activeTab === "events" && (
             <EventsTable
               events={events}
               clubs={clubs}
-
               keyword={eventKeyword}
               onSearch={setEventKeyword}
               page={eventPage}
               totalPages={eventPaginationMeta.TotalPages}
               onPageChange={setEventPage}
-
               filterClub={eventFilterClub}
               onFilterClubChange={setEventFilterClub}
               filterIsPrivate={eventFilterIsPrivate}
               onFilterIsPrivateChange={setEventFilterIsPrivate}
-
               onAdd={openAddEvent}
               onEdit={openEditEvent}
               onDelete={handleDeleteEvent}
@@ -581,22 +824,47 @@ const DashboardContent = () => {
           {activeTab === "event_registrations" && (
             <EventRegistrationsTable
               registrations={registrations}
-              events={events} // Truyền events vào đây để làm list dropdown
+              events={events}
               users={users}
-
               selectedEventId={selectedEventId}
               onEventChange={setSelectedEventId}
-
               keyword={regKeyword}
               onSearch={setRegKeyword}
               page={regPage}
               totalPages={regPaginationMeta.TotalPages}
               onPageChange={setRegPage}
-              
               onAdd={openAddReg}
               onEdit={openEditReg}
               onDelete={handleDeleteReg}
               onView={openViewReg}
+            />
+          )}
+
+          {/* TAB CAMPAIGNS */}
+          {activeTab === "campaigns" && (
+            <CampaignsTable
+              campaigns={campaigns} clubs={clubs}
+              keyword={campKeyword} onSearch={setCampKeyword}
+              filterClub={campFilterClub} onFilterClubChange={setCampFilterClub}
+              filterIsActive={campFilterIsActive} onFilterIsActiveChange={setCampFilterIsActive}
+              page={campPage} totalPages={campPaginationMeta.TotalPages} onPageChange={setCampPage}
+              onAdd={openAddCampaign} onEdit={openEditCampaign} onDelete={handleDeleteCampaign} onView={openViewCampaign}
+            />
+          )}
+
+          {/* TAB INTERVIEWS BOARD */}
+          {activeTab === "interviews" && (
+            <InterviewBoard
+              interviews={interviews} clubs={clubs} campaigns={campaigns} // TRUYỀN CAMPAIGNS
+              filterClub={intFilterClub} onFilterClubChange={setIntFilterClub}
+              filterStatus={intFilterStatus} onFilterStatusChange={setIntFilterStatus}
+              filterResult={intFilterResult} onFilterResultChange={setIntFilterResult}
+              filterCampaign={filterCampaign} 
+              onFilterCampaignChange={setFilterCampaign}
+              keyword={intKeyword} onSearch={setIntKeyword}
+              onAddWalkIn={openAddWalkIn} onCheckIn={handleCheckIn} onOpenStart={openStart} 
+              onOpenFinish={openFinish} onOpenUpdateResult={openUpdateResult}
+              onNoShow={handleNoShow} onCancel={handleCancel} onSendEmail={handleSendEmail} onView={openViewInterview}
             />
           )}
         </div>
@@ -609,30 +877,25 @@ const DashboardContent = () => {
         editingUser={editingUser} handleSaveUser={handleSaveUser}
         showViewUserModal={showViewUserModal} setShowViewUserModal={setShowViewUserModal}
         viewingUser={viewingUser}
-
         showClubModal={showClubModal} setShowClubModal={setShowClubModal}
         clubForm={clubForm} setClubForm={setClubForm}
         editingClub={editingClub} handleSaveClub={handleSaveClub}
         showViewClubModal={showViewClubModal} setShowViewClubModal={setShowViewClubModal}
         viewingClub={viewingClub}
-
         userErrors={userErrors} setUserErrors={setUserErrors}
         clubErrors={clubErrors} setClubErrors={setClubErrors}
-
         showMemberModal={showMemberModal} setShowMemberModal={setShowMemberModal}
         memberForm={memberForm} setMemberForm={setMemberForm}
         editingMember={editingMember} handleSaveMember={handleSaveMember}
         showViewMemberModal={showViewMemberModal} setShowViewMemberModal={setShowViewMemberModal}
         viewingMember={viewingMember}
         memberErrors={memberErrors} setMemberErrors={setMemberErrors}
-
         showEventModal={showEventModal} setShowEventModal={setShowEventModal}
         eventForm={eventForm} setEventForm={setEventForm}
         editingEvent={editingEvent} handleSaveEvent={handleSaveEvent}
         showViewEventModal={showViewEventModal} setShowViewEventModal={setShowViewEventModal}
         viewingEvent={viewingEvent}
         eventErrors={eventErrors} setEventErrors={setEventErrors}
-
         showRegModal={showRegModal} setShowRegModal={setShowRegModal}
         regForm={regForm} setRegForm={setRegForm}
         editingReg={editingReg} handleSaveReg={handleSaveReg}
@@ -641,6 +904,32 @@ const DashboardContent = () => {
         regErrors={regErrors} setRegErrors={setRegErrors}
         events={events}
 
+        // 👉 TRUYỀN THÊM PROPS CAMPAIGN CHO MODAL
+        showCampaignModal={showCampaignModal} setShowCampaignModal={setShowCampaignModal}
+        editingCampaign={editingCampaign} setEditingCampaign={setEditingCampaign}
+        campaignForm={campaignForm} setCampaignForm={setCampaignForm}
+        handleSaveCampaign={handleSaveCampaign}
+        showViewCampaignModal={showViewCampaignModal} setShowViewCampaignModal={setShowViewCampaignModal}
+        viewingCampaign={viewingCampaign} campaignErrors={campaignErrors} setCampaignErrors={setCampaignErrors}
+        campaigns={campaigns}
+
+        showInterviewModal={showInterviewModal} setShowInterviewModal={setShowInterviewModal}
+        interviewForm={interviewForm} setInterviewForm={setInterviewForm}
+        editingInterview={editingInterview} handleSaveInterview={handleSaveInterview}
+        interviewErrors={interviewErrors} setInterviewErrors={setInterviewErrors}
+        showStartModal={showStartModal} setShowStartModal={setShowStartModal}
+        startForm={startForm} setStartForm={setStartForm}
+        handleStartInterview={handleStartInterview}
+        startErrors={startErrors} setStartErrors={setStartErrors}
+        showFinishModal={showFinishModal} setShowFinishModal={setShowFinishModal}
+        finishForm={finishForm} setFinishForm={setFinishForm}
+        
+        isUpdatingResult={isUpdatingResult}
+        handleFinishInterview={handleFinishOrUpdateInterview}
+        
+        finishErrors={finishErrors} setFinishErrors={setFinishErrors}
+        showViewInterviewModal={showViewInterviewModal} setShowViewInterviewModal={setShowViewInterviewModal}
+        viewingInterview={viewingInterview}
         users={users}
         clubs={clubs}
         availableUsers={[]}

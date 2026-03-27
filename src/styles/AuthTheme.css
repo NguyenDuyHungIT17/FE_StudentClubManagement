@@ -97,12 +97,19 @@
   font-size: 15px;
   outline: none;
   background: #f8fafc;
+  color: #0f172a;
   transition: all 0.2s;
+}
+
+.auth-input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
 }
 
 .auth-input:focus {
   border-color: #3b82f6;
   background: white;
+  color: #0f172a;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
