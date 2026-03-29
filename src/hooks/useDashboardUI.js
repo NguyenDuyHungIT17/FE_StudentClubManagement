@@ -7,7 +7,7 @@ export const useDashboardUI = () => {
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [userErrors, setUserErrors] = useState({});
-  const [userForm, setUserForm] = useState({ fullName: "", email: "", password: "", role: "member", isActive: 1 });
+  const [userForm, setUserForm] = useState({ fullName: "", email: "", password: "", role: "member", isActive: 1, uploadFiles: [] });
   const [showViewUserModal, setShowViewUserModal] = useState(false);
   const [viewingUser, setViewingUser] = useState(null);
   const [userFilterRole, setUserFilterRole] = useState("all");
@@ -15,7 +15,7 @@ export const useDashboardUI = () => {
   // Club
   const [showClubModal, setShowClubModal] = useState(false);
   const [editingClub, setEditingClub] = useState(null);
-  const [clubForm, setClubForm] = useState({ clubName: "", title: "", description: "", leaderId: "" });
+  const [clubForm, setClubForm] = useState({ clubName: "", title: "", description: "", leaderId: "", uploadFiles: [] });
   const [showViewClubModal, setShowViewClubModal] = useState(false);
   const [viewingClub, setViewingClub] = useState(null);
   const [clubErrors, setClubErrors] = useState({});
@@ -23,7 +23,7 @@ export const useDashboardUI = () => {
   // Member
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
-  const [memberForm, setMemberForm] = useState({ clubId: "", userId: "", memberRole: "member", joinAt: "" });
+  const [memberForm, setMemberForm] = useState({ clubId: "", userId: "", memberRole: "member", joinAt: "", uploadFiles: [] });
   const [viewingMember, setViewingMember] = useState(null);
   const [showViewMemberModal, setShowViewMemberModal] = useState(false);
   const [memberErrors, setMemberErrors] = useState({});
@@ -31,7 +31,7 @@ export const useDashboardUI = () => {
   // Event
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
-  const [eventForm, setEventForm] = useState({ clubId: "", title: "", description: "", eventDate: "", isPrivate: true, priority: 0 });
+  const [eventForm, setEventForm] = useState({ clubId: "", title: "", description: "", eventDate: "", isPrivate: true, priority: 0, uploadFiles: [] });
   const [viewingEvent, setViewingEvent] = useState(null);
   const [showViewEventModal, setShowViewEventModal] = useState(false);
   const [eventErrors, setEventErrors] = useState({});

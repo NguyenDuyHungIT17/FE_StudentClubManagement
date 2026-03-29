@@ -1,6 +1,7 @@
 // src/hooks/useEvents.js
 import { useState, useEffect, useCallback } from 'react';
 import { eventService } from '../services/eventService';
+import { photoService } from '../services/photoService';
 
 export const useEvents = () => {
   const [events, setEvents] = useState([]);
@@ -20,7 +21,21 @@ export const useEvents = () => {
     setError(null);
     try {
       const response = await eventService.getAll(keyword, filterClub, filterIsPrivate, page, pageSize);
-      setEvents(response.data || []); 
+      const rawEvents = response.data || [];
+
+      const eventsWithPhoto = await Promise.all(
+        rawEvents.map(async (event) => {
+          try {
+            const photoResponse = await photoService.getByEvent(event.id);
+            const photoUrl = photoService.selectBestPhotoUrl(photoResponse, [2, 1, 3]);
+            return { ...event, photoUrl };
+          } catch {
+            return { ...event, photoUrl: null };
+          }
+        })
+      );
+
+      setEvents(eventsWithPhoto);
       setPaginationMeta(response.pagination);
     } catch (err) {
       setError(err.message);

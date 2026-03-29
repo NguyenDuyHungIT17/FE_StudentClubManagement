@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { memberService } from '../services/memberService';
+import { photoService } from '../services/photoService';
 
 export const useMembers = () => {
   const [members, setMembers] = useState([]);
@@ -18,7 +19,21 @@ export const useMembers = () => {
     setError(null);
     try {
       const response = await memberService.getAll(filterClub, filterRole, page, pageSize);
-      setMembers(response.data || []); 
+      const rawMembers = response.data || [];
+
+      const membersWithPhoto = await Promise.all(
+        rawMembers.map(async (member) => {
+          try {
+            const photoResponse = await photoService.getByClubMember(member.clubMemberId);
+            const photoUrl = photoService.selectBestPhotoUrl(photoResponse, [1, 3, 2]);
+            return { ...member, photoUrl };
+          } catch {
+            return { ...member, photoUrl: null };
+          }
+        })
+      );
+
+      setMembers(membersWithPhoto);
       setPaginationMeta(response.pagination);
     } catch (err) {
       setError(err.message);

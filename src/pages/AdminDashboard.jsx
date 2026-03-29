@@ -12,6 +12,10 @@ import { useCampaigns } from "../hooks/useCampaigns"; // Đảm bảo import Hoo
 import { useInterviews } from "../hooks/useInterviews";
 import { useDashboardUI } from "../hooks/useDashboardUI";
 
+// Import Services
+import { photoService } from "../services/photoService";
+import { userService } from "../services/userService";
+
 // Styles
 import "../styles/UniClubsTheme.css";
 
@@ -35,7 +39,7 @@ import AdminDashboardModals from "../components/dashboard/AdminDashboardModals";
 const DashboardContent = () => {
   // 1. LẤY DATA TỪ CÁC HOOK LOGIC
   const {
-    users, createUser, updateUser, deleteUser,
+    users, createUser, updateUser, deleteUser, fetchUsers,
     keyword: userKeyword, setKeyword: setUserKeyword,
     filterRole: userFilterRole, setFilterRole: setUserFilterRole,
     page: userPage, setPage: setUserPage,
@@ -90,6 +94,18 @@ const DashboardContent = () => {
 
   // State cục bộ cho Interview
   const [isUpdatingResult, setIsUpdatingResult] = useState(false);
+  const [leaderUsers, setLeaderUsers] = useState([]);
+
+  const fetchLeaderUsers = async () => {
+    try {
+      const response = await userService.getAll("", "all", 1, 200);
+      const allUsers = response?.data || [];
+      setLeaderUsers(allUsers.filter(u => u.role === "leader" || u.role === "admin"));
+    } catch (err) {
+      console.error("Lỗi tải danh sách trưởng CLB:", err);
+      setLeaderUsers([]);
+    }
+  };
 
   // 2. LẤY STATE GIAO DIỆN TỪ HOOK UI
   const {
@@ -141,14 +157,14 @@ const DashboardContent = () => {
   // =========================================================
   const openAddUser = () => {
     setEditingUser(null);
-    setUserForm({ fullName: "", email: "", password: "", role: "member", isActive: 1, clubId: "" });
+    setUserForm({ fullName: "", email: "", password: "", role: "member", isActive: 1, clubId: "", uploadFiles: [] });
     setUserErrors({});
     setShowUserModal(true);
   };
 
   const openEditUser = (u) => {
     setEditingUser(u.userId);
-    setUserForm({ ...u, password: "", clubId: u.clubId || "" });
+    setUserForm({ ...u, password: "", clubId: u.clubId || "", uploadFiles: [] });
     setUserErrors({});
     setShowUserModal(true);
   };
@@ -186,41 +202,117 @@ const DashboardContent = () => {
 
     setUserErrors({});
 
-    if (editingUser) {
-      const updatePayload = {
-        email: userForm.email.trim(),
-        fullName: userForm.fullName.trim(),
-        role: userForm.role,
-        isActive: parseInt(userForm.isActive)
-      };
+    const token = localStorage.getItem("token");
 
-      const result = await updateUser(editingUser, updatePayload);
-      if (result && result.success) {
-        setShowUserModal(false);
-      } else if (result.validationErrors) {
-        setUserErrors(result.validationErrors);
+    try {
+      let currentUserId = editingUser;
+
+      if (editingUser) {
+        const updatePayload = {
+          email: userForm.email.trim(),
+          fullName: userForm.fullName.trim(),
+          role: userForm.role,
+          isActive: parseInt(userForm.isActive)
+        };
+
+        const result = await updateUser(editingUser, updatePayload);
+        if (result && result.success) {
+          // Sau khi cập nhật xong, upload ảnh nếu có
+          if (userForm.uploadFiles && userForm.uploadFiles.length > 0) {
+            for (let i = 0; i < userForm.uploadFiles.length; i++) {
+              const item = userForm.uploadFiles[i];
+              if (!item.title || !item.title.trim()) {
+                alert(`Ảnh ${i + 1}: Vui lòng nhập tiêu đề`);
+                return;
+              }
+              const formData = new FormData();
+              formData.append("File", item.file);
+              formData.append("Title", item.title.trim());
+              formData.append("Type", parseInt(item.type)); // 1: Main, 2: Cover, 3: Side
+              formData.append("UserId", editingUser);
+              await photoService.upload(formData);
+            }
+          }
+          alert("Cập nhật tài khoản " + (userForm.uploadFiles?.length > 0 ? "và upload ảnh " : "") + "thành công!");
+          setShowUserModal(false);
+        } else if (result.validationErrors) {
+          setUserErrors(result.validationErrors);
+        } else {
+          alert(result?.message || "Cập nhật thất bại!");
+        }
       } else {
-        alert(result?.message || "Cập nhật thất bại!");
+        const createPayload = {
+          fullName: userForm.fullName.trim(),
+          email: userForm.email.trim(),
+          password: userForm.password,
+          role: userForm.role,
+          isActive: parseInt(userForm.isActive),
+          clubId: userForm.clubId ? parseInt(userForm.clubId) : null
+        };
+
+        // Gọi API trực tiếp để lấy userId từ response
+        const response = await fetch("https://localhost:7251/api/Users", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(createPayload)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.message || "Thêm mới tài khoản thất bại!");
+        }
+
+        const responseData = await response.json();
+        // Bao trọn mọi loại format response từ C#
+        console.log("📌 CREATE USER RESPONSE:", responseData); // Debug log
+        
+        // Thêm nhiều fallback options
+        let extractedId = responseData?.value?.userId || 
+                         responseData?.data?.userId || 
+                         responseData?.userId || 
+                         responseData?.id || 
+                         responseData?.data?.id ||
+                         (Array.isArray(responseData) && responseData[0]?.userId) ||
+                         (Array.isArray(responseData) && responseData[0]?.id);
+        
+        currentUserId = extractedId;
+
+        if (!currentUserId) {
+          const errorMsg = `Không thể lấy userId từ server!\n\n📌 Server Response:\n${JSON.stringify(responseData, null, 2)}\n\n👉 Vui lòng kiểm tra Console để xem format response từ Backend!`;
+          console.error("❌ Response format:", JSON.stringify(responseData, null, 2));
+          throw new Error(errorMsg);
+        }
+        
+        console.log("✅ Extracted userId:", currentUserId);
+
+        // Sau khi tạo xong, upload ảnh nếu có
+        if (userForm.uploadFiles && userForm.uploadFiles.length > 0) {
+          for (let i = 0; i < userForm.uploadFiles.length; i++) {
+            const item = userForm.uploadFiles[i];
+            if (!item.title || !item.title.trim()) {
+              alert(`Ảnh ${i + 1}: Vui lòng nhập tiêu đề`);
+              return;
+            }
+            const formData = new FormData();
+            formData.append("File", item.file);
+            formData.append("Title", item.title.trim());
+            formData.append("Type", parseInt(item.type)); // 1: Main, 2: Cover, 3: Side
+            formData.append("UserId", currentUserId);
+            await photoService.upload(formData);
+          }
+        }
+
+        alert("Tạo tài khoản " + (userForm.uploadFiles?.length > 0 ? "và upload ảnh " : "") + "thành công!");
+        setShowUserModal(false);
       }
 
-    } else {
-      const createPayload = {
-        fullName: userForm.fullName.trim(),
-        email: userForm.email.trim(),
-        password: userForm.password,
-        role: userForm.role,
-        isActive: parseInt(userForm.isActive),
-        clubId: userForm.clubId ? parseInt(userForm.clubId) : null
-      };
-
-      const result = await createUser(createPayload);
-      if (result && result.success) {
-        setShowUserModal(false);
-      } else if (result.validationErrors) {
-        setUserErrors(result.validationErrors);
-      } else {
-        alert(result?.message || "Thêm mới thất bại!");
-      }
+      fetchUsers(); // Refresh danh sách users
+    } catch (error) {
+      setUserErrors({ general: error.message });
+      alert("Lỗi: " + error.message);
     }
   };
 
@@ -242,22 +334,25 @@ const DashboardContent = () => {
   // =========================================================
   // --- CÁC HÀM XỬ LÝ SỰ KIỆN CHO CLUB ---
   // =========================================================
-  const openAddClub = () => {
+  const openAddClub = async () => {
     setEditingClub(null);
-    setClubForm({ clubName: "", title: "", description: "", leaderId: "" });
+    setClubForm({ clubName: "", title: "", description: "", leaderId: "", uploadFiles: [] });
     setClubErrors({});
+    await fetchLeaderUsers();
     setShowClubModal(true);
   };
 
-  const openEditClub = (c) => {
+  const openEditClub = async (c) => {
     setEditingClub(c.clubId);
     setClubForm({
       clubName: c.clubName,
       title: c.title || "",
       description: c.description,
-      leaderId: c.leaderId || ""
+      leaderId: c.leaderId || "",
+      uploadFiles: []
     });
     setClubErrors({});
+    await fetchLeaderUsers();
     setShowClubModal(true);
   };
 
@@ -278,23 +373,56 @@ const DashboardContent = () => {
 
     setClubErrors({});
 
-    const payload = {
-      clubName: clubForm.clubName.trim(),
-      title: clubForm.title?.trim() || "",
-      description: clubForm.description?.trim() || "",
-      leaderId: clubForm.leaderId ? parseInt(clubForm.leaderId) : null
-    };
+    const token = localStorage.getItem("token");
 
-    const result = editingClub
-      ? await updateClub(editingClub, payload)
-      : await createClub(payload);
+    try {
+      let currentClubId = editingClub;
 
-    if (result && result.success) {
-      setShowClubModal(false);
-    } else if (result.validationErrors) {
-      setClubErrors(result.validationErrors);
-    } else {
-      alert(result?.message || "Lỗi thao tác!");
+      const payload = {
+        clubName: clubForm.clubName.trim(),
+        title: clubForm.title?.trim() || "",
+        description: clubForm.description?.trim() || "",
+        leaderId: clubForm.leaderId ? parseInt(clubForm.leaderId) : null
+      };
+
+      const result = editingClub
+        ? await updateClub(editingClub, payload)
+        : await createClub(payload);
+
+      if (result && result.success) {
+        if (!editingClub) {
+          // Nếu tạo mới, cần lấy ClubId từ response
+          // Hiện tại không có ClubId từ result, nên bypass upload
+          // TODO: Backend cần return ClubId khi tạo mới Club
+          setShowClubModal(false);
+        } else {
+          // Nếu cập nhật, upload ảnh nếu có
+          if (clubForm.uploadFiles && clubForm.uploadFiles.length > 0) {
+            for (let i = 0; i < clubForm.uploadFiles.length; i++) {
+              const item = clubForm.uploadFiles[i];
+              if (!item.title || !item.title.trim()) {
+                alert(`Ảnh ${i + 1}: Vui lòng nhập tiêu đề`);
+                return;
+              }
+              const formData = new FormData();
+              formData.append("File", item.file);
+              formData.append("Title", item.title.trim());
+              formData.append("Type", parseInt(item.type)); // 1: Main, 2: Cover, 3: Side
+              formData.append("ClubId", editingClub);
+              await photoService.upload(formData);
+            }
+          }
+          alert("Cập nhật Câu lạc bộ " + (clubForm.uploadFiles?.length > 0 ? "và upload ảnh " : "") + "thành công!");
+          setShowClubModal(false);
+        }
+      } else if (result.validationErrors) {
+        setClubErrors(result.validationErrors);
+      } else {
+        alert(result?.message || "Lỗi thao tác!");
+      }
+    } catch (error) {
+      setClubErrors({ general: error.message });
+      alert("Lỗi: " + error.message);
     }
   };
 
@@ -319,7 +447,7 @@ const DashboardContent = () => {
   const openAddMember = () => {
     setEditingMember(null);
     const nowLocal = new Date().toISOString().slice(0, 16);
-    setMemberForm({ clubId: "", userId: "", memberRole: "member", joinAt: nowLocal });
+    setMemberForm({ clubId: "", userId: "", memberRole: "member", joinAt: nowLocal, uploadFiles: [] });
     setMemberErrors({});
     setShowMemberModal(true);
   };
@@ -332,7 +460,8 @@ const DashboardContent = () => {
       clubId: m.clubId ? m.clubId.toString() : "",
       userId: m.userId ? m.userId.toString() : "",
       memberRole: m.memberRole || "member",
-      joinAt: formattedDate
+      joinAt: formattedDate,
+      uploadFiles: []
     });
 
     setMemberErrors({});
@@ -351,23 +480,49 @@ const DashboardContent = () => {
     }
     setMemberErrors({});
 
-    const payload = {
-      clubId: parseInt(memberForm.clubId),
-      userId: parseInt(memberForm.userId),
-      memberRole: memberForm.memberRole,
-      joinAt: memberForm.joinAt ? new Date(memberForm.joinAt).toISOString() : null
-    };
+    const token = localStorage.getItem("token");
 
-    const result = editingMember
-      ? await updateMember(editingMember, payload)
-      : await createMember(payload);
+    try {
+      let currentMemberId = editingMember;
 
-    if (result && result.success) {
-      setShowMemberModal(false);
-    } else if (result.validationErrors) {
-      setMemberErrors(result.validationErrors);
-    } else {
-      alert(result?.message || "Lỗi thao tác!");
+      const payload = {
+        clubId: parseInt(memberForm.clubId),
+        userId: parseInt(memberForm.userId),
+        memberRole: memberForm.memberRole,
+        joinAt: memberForm.joinAt ? new Date(memberForm.joinAt).toISOString() : null
+      };
+
+      const result = editingMember
+        ? await updateMember(editingMember, payload)
+        : await createMember(payload);
+
+      if (result && result.success) {
+        // Upload ảnh nếu có
+        if (memberForm.uploadFiles && memberForm.uploadFiles.length > 0) {
+          for (let i = 0; i < memberForm.uploadFiles.length; i++) {
+            const item = memberForm.uploadFiles[i];
+            if (!item.title || !item.title.trim()) {
+              alert(`Ảnh ${i + 1}: Vui lòng nhập tiêu đề`);
+              return;
+            }
+            const formData = new FormData();
+            formData.append("File", item.file);
+            formData.append("Title", item.title.trim());
+            formData.append("Type", parseInt(item.type)); // 1: Main, 2: Cover, 3: Side
+            formData.append("ClubMemberId", editingMember || currentMemberId);
+            await photoService.upload(formData);
+          }
+        }
+        alert("Lưu thành viên " + (memberForm.uploadFiles?.length > 0 ? "và upload ảnh " : "") + "thành công!");
+        setShowMemberModal(false);
+      } else if (result.validationErrors) {
+        setMemberErrors(result.validationErrors);
+      } else {
+        alert(result?.message || "Lỗi thao tác!");
+      }
+    } catch (error) {
+      setMemberErrors({ general: error.message });
+      alert("Lỗi: " + error.message);
     }
   };
 
@@ -390,7 +545,7 @@ const DashboardContent = () => {
   const openAddEvent = () => {
     setEditingEvent(null);
     const nowLocal = new Date().toISOString().slice(0, 16);
-    setEventForm({ clubId: "", title: "", description: "", eventDate: nowLocal, isPrivate: true, priority: 1 });
+    setEventForm({ clubId: "", title: "", description: "", eventDate: nowLocal, isPrivate: true, priority: 1, uploadFiles: [] });
     setEventErrors({});
     setShowEventModal(true);
   };
@@ -404,7 +559,8 @@ const DashboardContent = () => {
       description: ev.description || "",
       eventDate: formattedDate,
       isPrivate: ev.isPrivate,
-      priority: ev.priority || 1
+      priority: ev.priority || 1,
+      uploadFiles: []
     });
     setEventErrors({});
     setShowEventModal(true);
@@ -422,20 +578,50 @@ const DashboardContent = () => {
     }
     setEventErrors({});
 
-    const payload = {
-      clubId: parseInt(eventForm.clubId),
-      title: eventForm.title.trim(),
-      description: eventForm.description,
-      isPrivate: eventForm.isPrivate,
-      priority: eventForm.priority,
-      eventDate: eventForm.eventDate ? new Date(eventForm.eventDate).toISOString() : null
-    };
+    const token = localStorage.getItem("token");
 
-    const result = editingEvent ? await updateEvent(editingEvent, payload) : await createEvent(payload);
+    try {
+      let currentEventId = editingEvent;
 
-    if (result && result.success) setShowEventModal(false);
-    else if (result.validationErrors) setEventErrors(result.validationErrors);
-    else alert(result?.message || "Lỗi thao tác!");
+      const payload = {
+        clubId: parseInt(eventForm.clubId),
+        title: eventForm.title.trim(),
+        description: eventForm.description,
+        isPrivate: eventForm.isPrivate,
+        priority: eventForm.priority,
+        eventDate: eventForm.eventDate ? new Date(eventForm.eventDate).toISOString() : null
+      };
+
+      const result = editingEvent ? await updateEvent(editingEvent, payload) : await createEvent(payload);
+
+      if (result && result.success) {
+        // Upload ảnh nếu có
+        if (eventForm.uploadFiles && eventForm.uploadFiles.length > 0) {
+          for (let i = 0; i < eventForm.uploadFiles.length; i++) {
+            const item = eventForm.uploadFiles[i];
+            if (!item.title || !item.title.trim()) {
+              alert(`Ảnh ${i + 1}: Vui lòng nhập tiêu đề`);
+              return;
+            }
+            const formData = new FormData();
+            formData.append("File", item.file);
+            formData.append("Title", item.title.trim());
+            formData.append("Type", parseInt(item.type)); // 1: Main, 2: Cover, 3: Side
+            formData.append("EventId", editingEvent || currentEventId);
+            await photoService.upload(formData);
+          }
+        }
+        alert("Lưu sự kiện " + (eventForm.uploadFiles?.length > 0 ? "và upload ảnh " : "") + "thành công!");
+        setShowEventModal(false);
+      } else if (result.validationErrors) {
+        setEventErrors(result.validationErrors);
+      } else {
+        alert(result?.message || "Lỗi thao tác!");
+      }
+    } catch (error) {
+      setEventErrors({ general: error.message });
+      alert("Lỗi: " + error.message);
+    }
   };
 
   const handleDeleteEvent = async (id) => {
@@ -931,6 +1117,7 @@ const DashboardContent = () => {
         showViewInterviewModal={showViewInterviewModal} setShowViewInterviewModal={setShowViewInterviewModal}
         viewingInterview={viewingInterview}
         users={users}
+        leaderUsers={leaderUsers}
         clubs={clubs}
         availableUsers={[]}
       />

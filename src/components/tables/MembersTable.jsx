@@ -1,5 +1,5 @@
 import React from "react";
-import { Edit, Trash2, Eye, Plus, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { Edit, Trash2, Eye, Plus, ChevronLeft, ChevronRight, Filter, Image as ImageIcon } from "lucide-react";
 
 const MembersTable = ({ 
   members, clubs, users,
@@ -12,6 +12,13 @@ const MembersTable = ({
 
   // Hàm dịch ID sang Tên
   const getClubName = (id) => clubs?.find(c => c.clubId === id)?.clubName || `ID: ${id}`;
+  
+  // Hàm lấy fullName của User để lấy chữ cái đầu
+  const getFullName = (id) => {
+    const u = users?.find(user => user.userId === id);
+    return u ? u.fullName : "";
+  };
+
   const getUserName = (id) => {
     const u = users?.find(user => user.userId === id);
     return u ? `${u.fullName} (${u.email})` : `ID: ${id}`;
@@ -60,19 +67,36 @@ const MembersTable = ({
           <thead>
             <tr>
               <th>Mã thẻ</th>
+              <th style={{ width: "60px", textAlign: "center" }}><ImageIcon size={16} color="var(--text-sub)" /></th>
               <th>Thành viên</th>
               <th>Câu lạc bộ</th>
               <th>Vai trò</th>
               <th>Ngày tham gia</th>
-              <th>Hành động</th>
+              <th style={{ textAlign: "right" }}>Hành động</th>
             </tr>
           </thead>
           <tbody>
             {safeMembers.length === 0 ? (
-              <tr><td colSpan="6" style={{ textAlign: "center", padding: "30px", color: "var(--text-sub)" }}>Không tìm thấy thành viên nào</td></tr>
+              <tr><td colSpan="7" style={{ textAlign: "center", padding: "30px", color: "var(--text-sub)" }}>Không tìm thấy thành viên nào</td></tr>
             ) : safeMembers.map(item => (
               <tr key={item.clubMemberId}>
                 <td>#{item.clubMemberId}</td>
+                
+                {/* 👉 CỘT HÌNH ẢNH (DÙNG ẢNH CỦA CLUB MEMBER HOẶC CHỮ CÁI ĐẦU) */}
+                <td style={{ textAlign: "center" }}>
+                  {item.photoUrl ? (
+                    <img 
+                      src={item.photoUrl} 
+                      alt="Ảnh thẻ" 
+                      style={{ width: "40px", height: "40px", borderRadius: "8px", objectFit: "cover", border: "1px solid var(--border)", display: "block", margin: "0 auto" }} 
+                    />
+                  ) : (
+                    <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--primary)", fontSize: "16px", fontWeight: "bold", margin: "0 auto" }}>
+                      {getFullName(item.userId) ? getFullName(item.userId).charAt(0).toUpperCase() : "M"}
+                    </div>
+                  )}
+                </td>
+
                 <td style={{ fontWeight: 600, color: "var(--text-main)" }}>{getUserName(item.userId)}</td>
                 <td>{getClubName(item.clubId)}</td>
                 <td>
@@ -81,9 +105,9 @@ const MembersTable = ({
                   </span>
                 </td>
                 <td>{formatDate(item.joinAt)}</td>
-                <td>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button className="btn-icon" title="Xem" onClick={() => onView(item)}><Eye size={16}/></button>
+                <td style={{ textAlign: "right" }}>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: "flex-end" }}>
+                    <button className="btn-icon" title="Xem chi tiết & Cập nhật ảnh" onClick={() => onView(item)}><Eye size={16}/></button>
                     <button className="btn-icon" title="Sửa" style={{ color: 'var(--primary)' }} onClick={() => onEdit(item)}><Edit size={16}/></button>
                     <button className="btn-icon" title="Xóa" style={{ color: '#ef4444' }} onClick={() => onDelete(item.clubMemberId)}><Trash2 size={16}/></button>
                   </div>

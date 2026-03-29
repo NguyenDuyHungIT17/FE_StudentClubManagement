@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { userService } from '../services/userService';
+import { photoService } from '../services/photoService';
 
 export const useUsers = () => {
   const [users, setUsers] = useState([]);
@@ -20,8 +21,21 @@ export const useUsers = () => {
     try {
       // Truyền thêm filterRole vào API
       const response = await userService.getAll(keyword, filterRole, page, pageSize);
-      console.log("2. TRẠM HOOK - Dữ liệu sau khi bóc tách:", response.data);
-      setUsers(response.data || []); 
+      const rawUsers = response.data || [];
+
+      const usersWithPhoto = await Promise.all(
+        rawUsers.map(async (user) => {
+          try {
+            const photoResponse = await photoService.getByUser(user.userId);
+            const photoUrl = photoService.selectBestPhotoUrl(photoResponse, [1, 3, 2]);
+            return { ...user, photoUrl };
+          } catch {
+            return { ...user, photoUrl: null };
+          }
+        })
+      );
+
+      setUsers(usersWithPhoto);
       setPaginationMeta(response.pagination);
     } catch (err) {
       setError(err.message);

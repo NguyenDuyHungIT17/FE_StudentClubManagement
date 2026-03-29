@@ -1,6 +1,7 @@
 // src/hooks/useClubs.js
 import { useState, useEffect, useCallback } from 'react';
 import { clubService } from '../services/clubService';
+import { photoService } from '../services/photoService';
 
 export const useClubs = () => {
   const [clubs, setClubs] = useState([]);
@@ -17,7 +18,21 @@ export const useClubs = () => {
     setLoading(true);
     try {
       const response = await clubService.getAll(keyword, page, pageSize);
-      setClubs(response.data);
+      const rawClubs = response.data || [];
+
+      const clubsWithPhoto = await Promise.all(
+        rawClubs.map(async (club) => {
+          try {
+            const photoResponse = await photoService.getByClub(club.clubId);
+            const photoUrl = photoService.selectBestPhotoUrl(photoResponse, [1, 2, 3]);
+            return { ...club, photoUrl };
+          } catch {
+            return { ...club, photoUrl: null };
+          }
+        })
+      );
+
+      setClubs(clubsWithPhoto);
       setPaginationMeta(response.pagination);
     } catch (err) {
       console.error("Lỗi khi lấy CLB:", err);

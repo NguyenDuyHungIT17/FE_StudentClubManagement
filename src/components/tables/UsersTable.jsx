@@ -1,5 +1,5 @@
 import React from "react";
-import { Edit, Trash2, Eye, Plus, Search, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { Edit, Trash2, Eye, Plus, Search, ChevronLeft, ChevronRight, Filter, User as UserIcon } from "lucide-react";
 
 const UsersTable = ({ 
   users, filterRole, onFilterChange, 
@@ -60,23 +60,41 @@ const UsersTable = ({
           <thead>
             <tr>
               <th>ID</th>
+              {/* 👉 Thêm tiêu đề cột Avatar */}
+              <th style={{ width: "60px", textAlign: "center" }}><UserIcon size={16} color="var(--text-sub)" /></th>
               <th>Họ tên</th>
               <th>Email</th>
               <th>Vai trò</th>
               <th>Trạng thái</th>
-              <th>Hành động</th>
+              <th style={{ textAlign: "right" }}>Hành động</th>
             </tr>
           </thead>
           <tbody>
             {safeUsers.length === 0 ? (
               <tr>
-                <td colSpan="6" style={{ textAlign: "center", padding: "30px", color: "var(--text-sub)" }}>
+                <td colSpan="7" style={{ textAlign: "center", padding: "30px", color: "var(--text-sub)" }}>
                   Không tìm thấy tài khoản nào phù hợp
                 </td>
               </tr>
             ) : safeUsers.map(user => (
               <tr key={user.userId}>
                 <td>#{user.userId}</td>
+                
+                {/* 👉 CỘT AVATAR NGƯỜI DÙNG */}
+                <td style={{ textAlign: "center" }}>
+                  {user.photoUrl ? (
+                    <img 
+                      src={user.photoUrl} 
+                      alt={user.fullName} 
+                      style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover", border: "1px solid var(--border)", display: "block", margin: "0 auto" }} 
+                    />
+                  ) : (
+                    <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "16px", fontWeight: "bold", margin: "0 auto" }}>
+                      {user.fullName ? user.fullName.charAt(0).toUpperCase() : "U"}
+                    </div>
+                  )}
+                </td>
+
                 <td style={{ fontWeight: 600, color: "var(--text-main)" }}>{user.fullName}</td>
                 <td>{user.email}</td>
                 <td>
@@ -89,11 +107,13 @@ const UsersTable = ({
                     {user.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </td>
-                <td>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button className="btn-icon" title="Xem" onClick={() => onView(user)}><Eye size={16}/></button>
+                <td style={{ textAlign: "right" }}>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: "flex-end" }}>
+                    <button className="btn-icon" title="Xem chi tiết & Quản lý ảnh" onClick={() => onView(user)}><Eye size={16}/></button>
                     <button className="btn-icon" title="Sửa" style={{ color: 'var(--primary)' }} onClick={() => onEdit(user)}><Edit size={16}/></button>
-                    <button className="btn-icon" title="Xóa" style={{ color: '#ef4444' }} onClick={() => onDelete(user.userId)}><Trash2 size={16}/></button>
+                    {user.role !== 'admin' && (
+                      <button className="btn-icon" title="Xóa" style={{ color: '#ef4444' }} onClick={() => onDelete(user.userId)}><Trash2 size={16}/></button>
+                    )}
                   </div>
                 </td>
               </tr>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Edit, Trash2, Eye, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Edit, Trash2, Eye, Plus, Search, ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
 
 const ClubsTable = ({ 
   clubs, 
@@ -46,20 +46,37 @@ const ClubsTable = ({
           <thead>
             <tr>
               <th>ID</th>
+              <th style={{ width: "60px", textAlign: "center" }}><ImageIcon size={16} color="var(--text-sub)" /></th>
               <th>Tên CLB</th>
               <th>Tiêu đề</th>
               <th>Mô tả</th>
               <th>Trưởng CLB</th>
               <th>Ngày tạo</th>
-              <th>Hành động</th>
+              <th style={{ textAlign: "right" }}>Hành động</th>
             </tr>
           </thead>
           <tbody>
             {clubs.length === 0 ? (
-              <tr><td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>Không tìm thấy câu lạc bộ nào phù hợp</td></tr>
+              <tr><td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-sub)' }}>Không tìm thấy câu lạc bộ nào phù hợp</td></tr>
             ) : clubs.map(club => (
               <tr key={club.clubId}>
                 <td>#{club.clubId}</td>
+                
+                {/* 👉 CỘT HÌNH ẢNH */}
+                <td style={{ textAlign: "center" }}>
+                  {club.photoUrl ? (
+                    <img 
+                      src={club.photoUrl} 
+                      alt={club.clubName} 
+                      style={{ width: "40px", height: "40px", borderRadius: "8px", objectFit: "cover", border: "1px solid var(--border)", display: "block", margin: "0 auto" }} 
+                    />
+                  ) : (
+                    <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: "#f1f5f9", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--primary)", fontSize: "16px", fontWeight: "bold", margin: "0 auto" }}>
+                      {club.clubName ? club.clubName.charAt(0).toUpperCase() : "C"}
+                    </div>
+                  )}
+                </td>
+
                 <td style={{ fontWeight: 600, color: "var(--text-main)" }}>{club.clubName}</td>
                 <td>{club.title || "-"}</td>
                 
@@ -71,9 +88,9 @@ const ClubsTable = ({
                 <td>{club.leaderName || <span style={{ color: 'var(--text-sub)', fontStyle: 'italic' }}>Chưa có</span>}</td>
                 <td>{club.createdAt ? new Date(club.createdAt).toLocaleDateString('vi-VN') : '-'}</td>
                 
-                <td>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button className="btn-icon" title="Xem chi tiết" onClick={() => onView(club)}><Eye size={16}/></button>
+                <td style={{ textAlign: "right" }}>
+                  <div style={{ display: 'flex', gap: 8, justifyContent: "flex-end" }}>
+                    <button className="btn-icon" title="Xem chi tiết & Cập nhật ảnh" onClick={() => onView(club)}><Eye size={16}/></button>
                     <button className="btn-icon" title="Sửa" style={{ color: 'var(--primary)' }} onClick={() => onEdit(club)}><Edit size={16}/></button>
                     <button className="btn-icon" title="Xóa" style={{ color: '#ef4444' }} onClick={() => onDelete(club.clubId)}><Trash2 size={16}/></button>
                   </div>
