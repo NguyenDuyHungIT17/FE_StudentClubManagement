@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { memberService } from '../services/memberService';
-import { photoService } from '../services/photoService';
 
 export const useMembers = () => {
   const [members, setMembers] = useState([]);
@@ -21,30 +20,15 @@ export const useMembers = () => {
       const response = await memberService.getAll(filterClub, filterRole, page, pageSize);
       const rawMembers = response.data || [];
 
-      const membersWithPhoto = await Promise.all(
-        rawMembers.map(async (member) => {
-          try {
-            const photoResponse = await photoService.getByClubMember(member.clubMemberId);
-            const photoUrl = photoService.selectBestPhotoUrl(photoResponse, [1, 3, 2]);
-            return { ...member, photoUrl };
-          } catch {
-            return { ...member, photoUrl: null };
-          }
-        })
-      );
-
-      setMembers(membersWithPhoto);
+      // Backend now provides photoUrl directly - no need for N+1 photo fetches
+      setMembers(rawMembers);
       setPaginationMeta(response.pagination);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [filterClub, filterRole, page, pageSize]);
-
-  useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]); 
+  }, [filterClub, filterRole, page, pageSize]); 
 
   const createMember = async (data) => {
     try {

@@ -38,6 +38,15 @@ export const eventService = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
+
+  getByIdPublic: async (id) => {
+    const response = await fetch(`${API_BASE_URL}/Event/${id}`, {
+      headers: { Accept: 'application/json' }
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(result?.message || 'Lỗi lấy chi tiết sự kiện');
+    return result?.data || result?.value || result || null;
+  },
   
   update: (id, data) => apiRequest(`/Event/${id}`, {
     method: 'PUT',

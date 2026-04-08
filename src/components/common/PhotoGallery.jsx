@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { photoService } from "../../services/photoService";
 import { Upload, Trash2, Image as ImageIcon, Edit, X } from "lucide-react";
 
-const PhotoGallery = ({ entityType, entityId }) => {
+const PhotoGallery = ({ entityType, entityId, readOnly = false }) => {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -24,7 +24,8 @@ const PhotoGallery = ({ entityType, entityId }) => {
       if (entityType === "club") res = await photoService.getByClub(entityId);
       else if (entityType === "event") res = await photoService.getByEvent(entityId);
       else if (entityType === "user") res = await photoService.getByUser(entityId);
-        else if (entityType === "clubMember") res = await photoService.getByClubMember(entityId);
+      else if (entityType === "clubMember") res = await photoService.getByClubMember(entityId);
+      else if (entityType === "campaign") res = await photoService.getByCampaign(entityId);
       const photoData = res?.value || res?.data || res || [];
       setPhotos(Array.isArray(photoData) ? photoData : []);
     } catch (error) {
@@ -73,6 +74,7 @@ const PhotoGallery = ({ entityType, entityId }) => {
         else if (entityType === "event") formData.append("EventId", entityId);
         else if (entityType === "user") formData.append("UserId", entityId);
         else if (entityType === "clubMember") formData.append("ClubMemberId", entityId);
+        else if (entityType === "campaign") formData.append("CampaignsId", entityId);
         await photoService.upload(formData);
         alert("Tải ảnh lên thành công!");
       }
@@ -106,41 +108,42 @@ const PhotoGallery = ({ entityType, entityId }) => {
   return (
     <div style={{ marginTop: "24px", borderTop: "2px dashed #e2e8f0", paddingTop: "20px" }}>
       <h5 style={{ fontWeight: "700", color: "#0f172a", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px", fontSize: "16px" }}>
-        <ImageIcon size={18} color="var(--primary)" /> Quản lý Hình ảnh đính kèm
+        <ImageIcon size={18} color="var(--primary)" /> {readOnly ? "Hình ảnh đính kèm" : "Quản lý Hình ảnh đính kèm"}
       </h5>
 
-      {/* FORM THÊM / SỬA */}
-      <form onSubmit={handleSubmit} style={{ background: editingPhotoId ? "#fffbeb" : "#f8fafc", padding: "16px", borderRadius: "12px", border: `1px solid ${editingPhotoId ? "#fde68a" : "#cbd5e1"}`, marginBottom: "20px", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "flex-end" }}>
-        <div style={{ flex: "1 1 180px" }}>
-          <label style={{ fontSize: "12px", fontWeight: "600", marginBottom: "4px", display: "block", color: "#334155" }}>
-            {editingPhotoId ? "Đổi Ảnh mới (Bỏ qua nếu giữ nguyên)" : "Chọn Ảnh *"}
-          </label>
-          <input id="photo-upload-input" type="file" accept="image/*" className="input-control" style={{ padding: "8px", background: "#fff" }} onChange={e => setFile(e.target.files[0])} />
-        </div>
-        <div style={{ flex: "1 1 150px" }}>
-          <label style={{ fontSize: "12px", fontWeight: "600", marginBottom: "4px", display: "block", color: "#334155" }}>Tiêu đề <span style={{color:"red"}}>*</span></label>
-          <input type="text" className="input-control" placeholder="VD: Logo, Ảnh bìa..." value={title} onChange={e => setTitle(e.target.value)} style={{ margin: 0, background: "#fff" }} />
-        </div>
-        <div style={{ flex: "0 0 120px" }}>
-          <label style={{ fontSize: "12px", fontWeight: "600", marginBottom: "4px", display: "block", color: "#334155" }}>Loại ảnh</label>
-          <select className="input-control" value={type} onChange={e => setType(e.target.value)} style={{ margin: 0, background: "#fff" }}>
-            <option value="1">Main (Chính)</option>
-            <option value="2">Cover (Bìa)</option>
-            <option value="3">Side (Phụ)</option>
-          </select>
-        </div>
-        
-        <div style={{ display: "flex", gap: "8px" }}>
-          {editingPhotoId && (
-            <button type="button" className="btn" style={{ height: "42px", background: "#f1f5f9", color: "#475569", fontWeight: "600" }} onClick={resetForm}>
-              <X size={16} /> Hủy
+      {!readOnly && (
+        <form onSubmit={handleSubmit} style={{ background: editingPhotoId ? "#fffbeb" : "#f8fafc", padding: "16px", borderRadius: "12px", border: `1px solid ${editingPhotoId ? "#fde68a" : "#cbd5e1"}`, marginBottom: "20px", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div style={{ flex: "1 1 180px" }}>
+            <label style={{ fontSize: "12px", fontWeight: "600", marginBottom: "4px", display: "block", color: "#334155" }}>
+              {editingPhotoId ? "Đổi Ảnh mới (Bỏ qua nếu giữ nguyên)" : "Chọn Ảnh *"}
+            </label>
+            <input id="photo-upload-input" type="file" accept="image/*" className="input-control" style={{ padding: "8px", background: "#fff" }} onChange={e => setFile(e.target.files[0])} />
+          </div>
+          <div style={{ flex: "1 1 150px" }}>
+            <label style={{ fontSize: "12px", fontWeight: "600", marginBottom: "4px", display: "block", color: "#334155" }}>Tiêu đề <span style={{color:"red"}}>*</span></label>
+            <input type="text" className="input-control" placeholder="VD: Logo, Ảnh bìa..." value={title} onChange={e => setTitle(e.target.value)} style={{ margin: 0, background: "#fff" }} />
+          </div>
+          <div style={{ flex: "0 0 120px" }}>
+            <label style={{ fontSize: "12px", fontWeight: "600", marginBottom: "4px", display: "block", color: "#334155" }}>Loại ảnh</label>
+            <select className="input-control" value={type} onChange={e => setType(e.target.value)} style={{ margin: 0, background: "#fff" }}>
+              <option value="1">Main (Chính)</option>
+              <option value="2">Cover (Bìa)</option>
+              <option value="3">Side (Phụ)</option>
+            </select>
+          </div>
+          
+          <div style={{ display: "flex", gap: "8px" }}>
+            {editingPhotoId && (
+              <button type="button" className="btn" style={{ height: "42px", background: "#f1f5f9", color: "#475569", fontWeight: "600" }} onClick={resetForm}>
+                <X size={16} /> Hủy
+              </button>
+            )}
+            <button type="submit" className="btn btn-primary" disabled={submitting} style={{ height: "42px", background: editingPhotoId ? "#f59e0b" : "" }}>
+              <Upload size={16} /> {submitting ? "Đang xử lý..." : (editingPhotoId ? "Lưu Cập nhật" : "Tải lên")}
             </button>
-          )}
-          <button type="submit" className="btn btn-primary" disabled={submitting} style={{ height: "42px", background: editingPhotoId ? "#f59e0b" : "" }}>
-            <Upload size={16} /> {submitting ? "Đang xử lý..." : (editingPhotoId ? "Lưu Cập nhật" : "Tải lên")}
-          </button>
-        </div>
-      </form>
+          </div>
+        </form>
+      )}
 
       {/* LƯỚI HIỂN THỊ ẢNH */}
       {loading ? (
@@ -161,15 +164,16 @@ const PhotoGallery = ({ entityType, entityId }) => {
                   </div>
                 </div>
                 
-                {/* Nút Xóa & Sửa nổi lên trên ảnh */}
-                <div style={{ position: "absolute", top: "6px", right: "6px", display: "flex", gap: "4px" }}>
-                  <button onClick={() => handleEditClick(photo)} style={{ background: "#fff", color: "#f59e0b", border: "none", borderRadius: "6px", padding: "6px", cursor: "pointer", display: "flex", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} title="Sửa ảnh">
-                    <Edit size={14} />
-                  </button>
-                  <button onClick={() => handleDelete(pid)} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", padding: "6px", cursor: "pointer", display: "flex", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} title="Xóa ảnh">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                {!readOnly && (
+                  <div style={{ position: "absolute", top: "6px", right: "6px", display: "flex", gap: "4px" }}>
+                    <button onClick={() => handleEditClick(photo)} style={{ background: "#fff", color: "#f59e0b", border: "none", borderRadius: "6px", padding: "6px", cursor: "pointer", display: "flex", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} title="Sửa ảnh">
+                      <Edit size={14} />
+                    </button>
+                    <button onClick={() => handleDelete(pid)} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", padding: "6px", cursor: "pointer", display: "flex", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} title="Xóa ảnh">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}

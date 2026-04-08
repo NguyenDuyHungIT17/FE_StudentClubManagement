@@ -2,6 +2,9 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import WelcomePage from "./pages/WelcomePage";
 import LoginPage from "./pages/LoginPage";
 import PublicHome from "./pages/PublicHome";
+import PublicEventDetail from "./pages/PublicEventDetail";
+import PublicApplyCampaign from "./pages/PublicApplyCampaign";
+import PublicClubDetail from "./pages/PublicClubDetail";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -20,6 +23,9 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/public" element={<PublicHome />} />
+        <Route path="/public/clubs/:clubId" element={<PublicClubDetail />} />
+        <Route path="/public/events/:eventId" element={<PublicEventDetail />} />
+        <Route path="/public/apply/:campaignId" element={<PublicApplyCampaign />} />
         <Route path="/clubs/:clubId" element={<ClubDetail />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/leader" element={<LeaderDashboard />} />

@@ -32,6 +32,23 @@ export const eventRegistrationService = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
+
+  registerGuest: async (data) => {
+    const response = await fetch(`${API_BASE_URL}/EventRegistrations/register-guest`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json().catch(() => null);
+    if (!response.ok || result?.isSuccess === false) {
+      throw new Error(result?.message || 'Đăng ký khách thất bại');
+    }
+    return result;
+  },
   
   update: (id, data) => apiRequest(`/EventRegistrations/${id}`, {
     method: 'PUT',

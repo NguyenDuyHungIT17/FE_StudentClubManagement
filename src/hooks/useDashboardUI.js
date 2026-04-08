@@ -47,7 +47,7 @@ export const useDashboardUI = () => {
   // 👉 CAMPAIGN (ĐỢT TUYỂN) - THÊM VÀO ĐÂY
   const [showCampaignModal, setShowCampaignModal] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState(null);
-  const [campaignForm, setCampaignForm] = useState({ clubId: "", title: "", startDate: "", endDate: "", isActive: true });
+  const [campaignForm, setCampaignForm] = useState({ clubId: "", title: "", startDate: "", endDate: "", isActive: true, uploadFiles: [], existingPhotos: [] });
   const [showViewCampaignModal, setShowViewCampaignModal] = useState(false);
   const [viewingCampaign, setViewingCampaign] = useState(null);
   const [campaignErrors, setCampaignErrors] = useState({});

@@ -2,7 +2,7 @@ import { apiRequest, API_BASE_URL } from './api';
 
 export const userService = {
   // Thêm tham số role vào đây
-  getAll: async (keyword = "", role = "all", pageNumber = 1, pageSize = 10) => {
+  getAll: async (keyword = "", role = "all", pageNumber = 1, pageSize = 10, isActive) => {
     const token = localStorage.getItem("token");
     
     // Gắn params
@@ -12,6 +12,22 @@ export const userService = {
     // NẾU ROLE KHÁC "all" THÌ MỚI GỬI LÊN BACKEND
     if (role && role !== "all") {
       query.append("Role", role); 
+    }
+
+    // Filter trạng thái (Active/Inactive) - backend nhận 0/1
+    if (isActive !== undefined && isActive !== null && isActive !== "all") {
+      const normalizedInt = (() => {
+        if (typeof isActive === "number") return isActive === 1 ? 1 : 0;
+        if (typeof isActive === "boolean") return isActive ? 1 : 0;
+        const s = String(isActive).trim().toLowerCase();
+        if (s === "1" || s === "true") return 1;
+        if (s === "0" || s === "false") return 0;
+        return undefined;
+      })();
+
+      if (normalizedInt !== undefined) {
+        query.append("IsActive", String(normalizedInt));
+      }
     }
     
     query.append("PageNumber", pageNumber);

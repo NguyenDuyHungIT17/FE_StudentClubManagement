@@ -68,6 +68,10 @@ export const photoService = {
     const response = await fetch(`${API_BASE_URL}/Photos/clubmember/${clubMemberId}`);
     return await response.json().catch(() => null);
   },
+  getByCampaign: async (campaignId) => {
+    const response = await fetch(`${API_BASE_URL}/Photos/campaign/${campaignId}`);
+    return await response.json().catch(() => null);
+  },
 
   normalizePhotos,
   selectBestPhotoUrl,

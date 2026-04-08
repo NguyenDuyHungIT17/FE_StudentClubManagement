@@ -1,7 +1,6 @@
 // src/hooks/useClubs.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { clubService } from '../services/clubService';
-import { photoService } from '../services/photoService';
 
 export const useClubs = () => {
   const [clubs, setClubs] = useState([]);
@@ -20,19 +19,8 @@ export const useClubs = () => {
       const response = await clubService.getAll(keyword, page, pageSize);
       const rawClubs = response.data || [];
 
-      const clubsWithPhoto = await Promise.all(
-        rawClubs.map(async (club) => {
-          try {
-            const photoResponse = await photoService.getByClub(club.clubId);
-            const photoUrl = photoService.selectBestPhotoUrl(photoResponse, [1, 2, 3]);
-            return { ...club, photoUrl };
-          } catch {
-            return { ...club, photoUrl: null };
-          }
-        })
-      );
-
-      setClubs(clubsWithPhoto);
+      // Backend now provides photoUrl directly - no need for N+1 photo fetches
+      setClubs(rawClubs);
       setPaginationMeta(response.pagination);
     } catch (err) {
       console.error("Lỗi khi lấy CLB:", err);
@@ -40,10 +28,6 @@ export const useClubs = () => {
       setLoading(false);
     }
   }, [keyword, page, pageSize]); // Tự động gọi lại nếu keyword hoặc page thay đổi
-
-  useEffect(() => {
-    fetchClubs();
-  }, [fetchClubs]);
 
   // Các hàm CRUD (Không chứa alert ở đây, chỉ trả về kết quả)
   const createClub = async (clubData) => {
@@ -84,7 +68,7 @@ export const useClubs = () => {
   };
 
   return { 
-    clubs, loading, 
+    clubs, loading, fetchClubs,
     keyword, setKeyword, 
     page, setPage, 
     paginationMeta,

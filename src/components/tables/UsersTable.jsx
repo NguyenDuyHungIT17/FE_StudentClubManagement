@@ -2,10 +2,20 @@ import React from "react";
 import { Edit, Trash2, Eye, Plus, Search, ChevronLeft, ChevronRight, Filter, User as UserIcon } from "lucide-react";
 
 const UsersTable = ({ 
-  users, filterRole, onFilterChange, 
-  keyword, onSearch, 
-  page, totalPages, onPageChange,
-  onAdd, onEdit, onDelete, onView 
+  users,
+  filterRole = "all",
+  onFilterChange,
+  filterIsActive = "1",
+  onFilterActiveChange,
+  keyword = "",
+  onSearch,
+  page = 1,
+  totalPages = 1,
+  onPageChange,
+  onAdd,
+  onEdit,
+  onDelete,
+  onView 
 }) => {
   // CHỐNG SẬP BẢNG: Đảm bảo dữ liệu luôn là mảng
   const safeUsers = Array.isArray(users) ? users : [];
@@ -27,7 +37,7 @@ const UsersTable = ({
               className="input-control"
               placeholder="Tìm kiếm tài khoản..." 
               value={keyword}
-              onChange={(e) => onSearch(e.target.value)}
+              onChange={(e) => onSearch?.(e.target.value)}
               style={{ paddingLeft: 36, margin: 0, width: "100%" }} 
             />
           </div>
@@ -38,7 +48,7 @@ const UsersTable = ({
             <select 
               className="input-control" 
               value={filterRole} 
-              onChange={(e) => onFilterChange(e.target.value)}
+              onChange={(e) => onFilterChange?.(e.target.value)}
               style={{ margin: 0, minWidth: '150px' }}
             >
               <option value="all">Tất cả vai trò</option>
@@ -47,9 +57,23 @@ const UsersTable = ({
               <option value="member">Member</option>
             </select>
           </div>
+
+          {/* Ô Lọc Trạng Thái */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Filter size={16} color="var(--text-sub)" />
+            <select
+              className="input-control"
+              value={filterIsActive}
+              onChange={(e) => onFilterActiveChange?.(e.target.value)}
+              style={{ margin: 0, minWidth: '150px' }}
+            >
+              <option value="1">Active</option>
+              <option value="0">Inactive</option>
+            </select>
+          </div>
         </div>
 
-        <button className="btn btn-primary" onClick={onAdd} style={{ whiteSpace: "nowrap" }}>
+        <button className="btn btn-primary" onClick={() => onAdd?.()} style={{ whiteSpace: "nowrap" }}>
           <Plus size={16}/> Thêm mới
         </button>
       </div>
@@ -109,10 +133,10 @@ const UsersTable = ({
                 </td>
                 <td style={{ textAlign: "right" }}>
                   <div style={{ display: 'flex', gap: 10, justifyContent: "flex-end" }}>
-                    <button className="btn-icon" title="Xem chi tiết & Quản lý ảnh" onClick={() => onView(user)}><Eye size={16}/></button>
-                    <button className="btn-icon" title="Sửa" style={{ color: 'var(--primary)' }} onClick={() => onEdit(user)}><Edit size={16}/></button>
+                    <button className="btn-icon" title="Xem chi tiết & Quản lý ảnh" onClick={() => onView?.(user)}><Eye size={16}/></button>
+                    <button className="btn-icon" title="Sửa" style={{ color: 'var(--primary)' }} onClick={() => onEdit?.(user)}><Edit size={16}/></button>
                     {user.role !== 'admin' && (
-                      <button className="btn-icon" title="Xóa" style={{ color: '#ef4444' }} onClick={() => onDelete(user.userId)}><Trash2 size={16}/></button>
+                      <button className="btn-icon" title="Xóa" style={{ color: '#ef4444' }} onClick={() => onDelete?.(user.userId)}><Trash2 size={16}/></button>
                     )}
                   </div>
                 </td>
@@ -128,7 +152,7 @@ const UsersTable = ({
           <button 
             className="btn"
             disabled={page <= 1} 
-            onClick={() => onPageChange(page - 1)}
+            onClick={() => onPageChange?.(page - 1)}
             style={{ 
               padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "6px", backgroundColor: "white",
               opacity: page <= 1 ? 0.5 : 1, cursor: page <= 1 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "4px"
@@ -144,7 +168,7 @@ const UsersTable = ({
           <button 
             className="btn"
             disabled={page >= totalPages} 
-            onClick={() => onPageChange(page + 1)}
+            onClick={() => onPageChange?.(page + 1)}
             style={{ 
               padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "6px", backgroundColor: "white",
               opacity: page >= totalPages ? 0.5 : 1, cursor: page >= totalPages ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "4px"

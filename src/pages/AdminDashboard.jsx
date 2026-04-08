@@ -1,5 +1,5 @@
 // src/pages/AdminDashboard.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ThemeProvider } from "../context/ThemeContext";
 
 // Import Hooks chuẩn
@@ -15,6 +15,7 @@ import { useDashboardUI } from "../hooks/useDashboardUI";
 // Import Services
 import { photoService } from "../services/photoService";
 import { userService } from "../services/userService";
+import { clubService } from "../services/clubService";
 
 // Styles
 import "../styles/UniClubsTheme.css";
@@ -37,11 +38,12 @@ import InterviewBoard from "../components/interviews/InterviewBoard";
 import AdminDashboardModals from "../components/dashboard/AdminDashboardModals";
 
 const DashboardContent = () => {
-  // 1. LẤY DATA TỪ CÁC HOOK LOGIC
+
   const {
     users, createUser, updateUser, deleteUser, fetchUsers,
     keyword: userKeyword, setKeyword: setUserKeyword,
     filterRole: userFilterRole, setFilterRole: setUserFilterRole,
+    filterIsActive: userFilterIsActive, setFilterIsActive: setUserFilterIsActive,
     page: userPage, setPage: setUserPage,
     paginationMeta: userPaginationMeta
   } = useUsers();
@@ -55,12 +57,12 @@ const DashboardContent = () => {
   } = useEventRegistrations();
 
   const {
-    clubs, createClub, updateClub, deleteClub,
+    clubs, createClub, updateClub, deleteClub, fetchClubs,
     keyword, setKeyword, page, setPage, paginationMeta
   } = useClubs();
 
   const {
-    members, createMember, updateMember, deleteMember,
+    members, createMember, updateMember, deleteMember, fetchMembers,
     filterClub: memberFilterClub, setFilterClub: setMemberFilterClub,
     filterRole: memberFilterRole, setFilterRole: setMemberFilterRole,
     page: memberPage, setPage: setMemberPage,
@@ -68,7 +70,7 @@ const DashboardContent = () => {
   } = useMembers();
 
   const {
-    events, createEvent, updateEvent, deleteEvent,
+    events, createEvent, updateEvent, deleteEvent, fetchEvents,
     keyword: eventKeyword, setKeyword: setEventKeyword,
     filterClub: eventFilterClub, setFilterClub: setEventFilterClub,
     filterIsPrivate: eventFilterIsPrivate, setFilterIsPrivate: setEventFilterIsPrivate,
@@ -77,7 +79,7 @@ const DashboardContent = () => {
   } = useEvents();
 
   const {
-    campaigns, createCampaign, updateCampaign, deleteCampaign,
+    campaigns, createCampaign, updateCampaign, deleteCampaign, fetchCampaigns,
     keyword: campKeyword, setKeyword: setCampKeyword,
     filterClub: campFilterClub, setFilterClub: setCampFilterClub,
     filterIsActive: campFilterIsActive, setFilterIsActive: setCampFilterIsActive,
@@ -85,7 +87,7 @@ const DashboardContent = () => {
   } = useCampaigns();
 
   const {
-    interviews, keyword: intKeyword, setKeyword: setIntKeyword, filterClub: intFilterClub, setFilterClub: setIntFilterClub,
+    interviews, fetchInterviews, keyword: intKeyword, setKeyword: setIntKeyword, filterClub: intFilterClub, setFilterClub: setIntFilterClub,
     filterStatus: intFilterStatus, setFilterStatus: setIntFilterStatus, filterResult: intFilterResult, setFilterResult: setIntFilterResult,
     createWalkIn, updateInterview, deleteInterview, checkIn, startInterview, finishInterview, noShow, cancelInterview, sendEmails,
     filterCampaign, setFilterCampaign,
@@ -95,17 +97,54 @@ const DashboardContent = () => {
   // State cục bộ cho Interview
   const [isUpdatingResult, setIsUpdatingResult] = useState(false);
   const [leaderUsers, setLeaderUsers] = useState([]);
+  const leadersFetchedRef = useRef(false); // 🚀 Prevent double fetch in StrictMode
+  const lastFetchKeyRef = useRef(null); // 🚀 Prevent duplicate fetches for same query state
 
-  const fetchLeaderUsers = async () => {
-    try {
-      const response = await userService.getAll("", "all", 1, 200);
-      const allUsers = response?.data || [];
-      setLeaderUsers(allUsers.filter(u => u.role === "leader" || u.role === "admin"));
-    } catch (err) {
-      console.error("Lỗi tải danh sách trưởng CLB:", err);
-      setLeaderUsers([]);
-    }
-  };
+  const normalizeRole = (role) => String(role || "").trim().toLowerCase();
+  const isLeaderRole = (role) => normalizeRole(role) === "leader" || normalizeRole(role) === "admin";
+  const normalizeName = (name) =>
+    String(name || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+
+  // 🚀 Fetch leaders ONCE on mount, cache result
+  useEffect(() => {
+    if (leadersFetchedRef.current) return; // ✅ Skip if already fetched
+    leadersFetchedRef.current = true;
+
+    const loadLeaders = async () => {
+      try {
+        const response = await userService.getAll("", "all", 1, 200);
+        const allUsers = response?.data || [];
+        const leaders = allUsers.filter((u) => isLeaderRole(u.role));
+        setLeaderUsers(leaders);
+      } catch (err) {
+        console.error("Lỗi tải danh sách trưởng CLB:", err);
+        setLeaderUsers([]);
+      }
+    };
+    loadLeaders();
+  }, []); // Empty deps = run once on mount
+
+  // 🚀 EAGER LOAD: Fetch shared data (clubs, events, members) on mount for dropdowns
+  useEffect(() => {
+    const loadSharedData = async () => {
+      try {
+        // Parallelize: fetch all shared data at once
+        await Promise.all([
+          fetchClubs(),
+          fetchEvents(),
+          fetchMembers()
+        ]);
+      } catch (err) {
+        console.error("Lỗi tải shared data:", err);
+      }
+    };
+    loadSharedData();
+  }, []); // Run once on mount, not on every render
 
   // 2. LẤY STATE GIAO DIỆN TỪ HOOK UI
   const {
@@ -152,19 +191,84 @@ const DashboardContent = () => {
     userErrors, setUserErrors
   } = useDashboardUI();
 
+  // ============================================
+  // --- LAZY LOADING: Tab-based data fetching ---
+  // ============================================
+  const activeFetchKey = (() => {
+    switch (activeTab) {
+      case "users":
+        return `users|${userKeyword}|${userFilterRole}|${userFilterIsActive}|${userPage}`;
+      case "clubs":
+        return `clubs|${keyword}|${page}`;
+      case "members":
+        return `members|${memberFilterClub}|${memberFilterRole}|${memberPage}`;
+      case "events":
+        return `events|${eventKeyword}|${eventFilterClub}|${eventFilterIsPrivate}|${eventPage}`;
+      case "event_registrations":
+        return `event_registrations|${selectedEventId}|${regKeyword}|${regPage}`;
+      case "campaigns":
+        return `campaigns|${campKeyword}|${campFilterClub}|${campFilterIsActive}|${campPage}`;
+      case "interviews":
+        return `interviews|${intKeyword}|${intFilterClub}|${filterCampaign}|${intFilterStatus}|${intFilterResult}`;
+      default:
+        return String(activeTab || "");
+    }
+  })();
+
+  useEffect(() => {
+    // ✅ Skip if query state hasn't changed (prevents duplicate fetch in StrictMode)
+    if (lastFetchKeyRef.current === activeFetchKey) return;
+    lastFetchKeyRef.current = activeFetchKey;
+
+    // Only load data for active tab
+    switch (activeTab) {
+      case "users":
+        fetchUsers();
+        break;
+      case "clubs":
+        fetchClubs();
+        break;
+      case "members":
+        fetchMembers();
+        break;
+      case "events":
+        fetchEvents();
+        break;
+      case "event_registrations":
+        // fetchRegistrations handled by useEventRegistrations when selectedEventId/page/keyword changes
+        break;
+      case "campaigns":
+        fetchCampaigns();
+        break;
+      case "interviews":
+        fetchInterviews();
+        break;
+      default:
+        break;
+    }
+  }, [activeFetchKey]);
+
   // =========================================================
   // --- CÁC HÀM XỬ LÝ SỰ KIỆN CHO USER ---
   // =========================================================
   const openAddUser = () => {
     setEditingUser(null);
-    setUserForm({ fullName: "", email: "", password: "", role: "member", isActive: 1, clubId: "", uploadFiles: [] });
+    setUserForm({ fullName: "", email: "", password: "", role: "member", isActive: 1, clubId: "", uploadFiles: [], existingPhotos: [] });
     setUserErrors({});
     setShowUserModal(true);
   };
 
-  const openEditUser = (u) => {
+  const openEditUser = async (u) => {
+    let existingPhotos = [];
+    try {
+      const photoResponse = await photoService.getByUser(u.userId);
+      existingPhotos = photoService.normalizePhotos(photoResponse);
+    } catch (err) {
+      console.error("Lỗi tải ảnh user khi mở form sửa:", err);
+    }
+
     setEditingUser(u.userId);
-    setUserForm({ ...u, password: "", clubId: u.clubId || "", uploadFiles: [] });
+    setUserForm({ ...u, password: "", clubId: u.clubId || "", uploadFiles: [], existingPhotos });
     setUserErrors({});
     setShowUserModal(true);
   };
@@ -334,25 +438,56 @@ const DashboardContent = () => {
   // =========================================================
   // --- CÁC HÀM XỬ LÝ SỰ KIỆN CHO CLUB ---
   // =========================================================
-  const openAddClub = async () => {
+  const openAddClub = () => {
     setEditingClub(null);
-    setClubForm({ clubName: "", title: "", description: "", leaderId: "", uploadFiles: [] });
+    setClubForm({ clubName: "", title: "", description: "", leaderId: "", uploadFiles: [], existingPhotos: [] });
     setClubErrors({});
-    await fetchLeaderUsers();
+    // ✅ Use cached leaderUsers instead of fetching
     setShowClubModal(true);
   };
 
   const openEditClub = async (c) => {
+    // 🚀 PARALLELIZE: Fetch photos + detail simultaneously
+    const [photoResponse, detail] = await Promise.all([
+      photoService.getByClub(c.clubId).catch((err) => {
+        console.error("Lỗi tải ảnh CLB khi mở form sửa:", err);
+        return null;
+      }),
+      clubService.getById(c.clubId).catch((err) => {
+        console.error("Lỗi tải chi tiết CLB khi mở form sửa:", err);
+        return null;
+      })
+    ]);
+
+    const existingPhotos = photoResponse ? photoService.normalizePhotos(photoResponse) : [];
+
+    let currentLeaderId =
+      detail?.leaderId ??
+      detail?.leaderUserId ??
+      detail?.leader?.userId ??
+      c.leaderId ??
+      c.leaderUserId ??
+      c.leader?.userId ??
+      "";
+
+    // Fallback: nếu backend list/detail chưa trả leaderId, map tạm bằng leaderName
+    if ((currentLeaderId === "" || currentLeaderId === null || currentLeaderId === undefined) && c.leaderName) {
+      const foundLeader = leaderUsers.find(
+        (u) => normalizeName(u.fullName) === normalizeName(c.leaderName)
+      );
+      currentLeaderId = foundLeader?.userId ?? "";
+    }
+
     setEditingClub(c.clubId);
     setClubForm({
-      clubName: c.clubName,
-      title: c.title || "",
-      description: c.description,
-      leaderId: c.leaderId || "",
-      uploadFiles: []
+      clubName: detail?.clubName ?? c.clubName,
+      title: detail?.title ?? c.title ?? "",
+      description: detail?.description ?? c.description,
+      leaderId: currentLeaderId !== "" ? String(currentLeaderId) : "",
+      uploadFiles: [],
+      existingPhotos
     });
     setClubErrors({});
-    await fetchLeaderUsers();
     setShowClubModal(true);
   };
 
@@ -447,12 +582,20 @@ const DashboardContent = () => {
   const openAddMember = () => {
     setEditingMember(null);
     const nowLocal = new Date().toISOString().slice(0, 16);
-    setMemberForm({ clubId: "", userId: "", memberRole: "member", joinAt: nowLocal, uploadFiles: [] });
+    setMemberForm({ clubId: "", userId: "", memberRole: "member", joinAt: nowLocal, uploadFiles: [], existingPhotos: [] });
     setMemberErrors({});
     setShowMemberModal(true);
   };
 
-  const openEditMember = (m) => {
+  const openEditMember = async (m) => {
+    let existingPhotos = [];
+    try {
+      const photoResponse = await photoService.getByClubMember(m.clubMemberId);
+      existingPhotos = photoService.normalizePhotos(photoResponse);
+    } catch (err) {
+      console.error("Lỗi tải ảnh thành viên khi mở form sửa:", err);
+    }
+
     setEditingMember(m.clubMemberId);
     const formattedDate = m.joinAt ? m.joinAt.slice(0, 16) : "";
 
@@ -461,7 +604,8 @@ const DashboardContent = () => {
       userId: m.userId ? m.userId.toString() : "",
       memberRole: m.memberRole || "member",
       joinAt: formattedDate,
-      uploadFiles: []
+      uploadFiles: [],
+      existingPhotos
     });
 
     setMemberErrors({});
@@ -545,12 +689,20 @@ const DashboardContent = () => {
   const openAddEvent = () => {
     setEditingEvent(null);
     const nowLocal = new Date().toISOString().slice(0, 16);
-    setEventForm({ clubId: "", title: "", description: "", eventDate: nowLocal, isPrivate: true, priority: 1, uploadFiles: [] });
+    setEventForm({ clubId: "", title: "", description: "", eventDate: nowLocal, isPrivate: true, priority: 1, uploadFiles: [], existingPhotos: [] });
     setEventErrors({});
     setShowEventModal(true);
   };
 
-  const openEditEvent = (ev) => {
+  const openEditEvent = async (ev) => {
+    let existingPhotos = [];
+    try {
+      const photoResponse = await photoService.getByEvent(ev.id);
+      existingPhotos = photoService.normalizePhotos(photoResponse);
+    } catch (err) {
+      console.error("Lỗi tải ảnh sự kiện khi mở form sửa:", err);
+    }
+
     setEditingEvent(ev.id);
     const formattedDate = ev.eventDate ? ev.eventDate.slice(0, 16) : "";
     setEventForm({
@@ -560,7 +712,8 @@ const DashboardContent = () => {
       eventDate: formattedDate,
       isPrivate: ev.isPrivate,
       priority: ev.priority || 1,
-      uploadFiles: []
+      uploadFiles: [],
+      existingPhotos
     });
     setEventErrors({});
     setShowEventModal(true);
@@ -707,19 +860,29 @@ const DashboardContent = () => {
   // =========================================================
   const openAddCampaign = () => {
     setEditingCampaign(null);
-    setCampaignForm({ clubId: "", title: "", startDate: "", endDate: "", isActive: true });
+    setCampaignForm({ clubId: "", title: "", startDate: "", endDate: "", isActive: true, uploadFiles: [], existingPhotos: [] });
     setCampaignErrors({});
     setShowCampaignModal(true);
   };
 
-  const openEditCampaign = (camp) => {
+  const openEditCampaign = async (camp) => {
+    let existingPhotos = [];
+    try {
+      const photoResponse = await photoService.getByCampaign(camp.campaignId);
+      existingPhotos = photoService.normalizePhotos(photoResponse);
+    } catch (err) {
+      console.error("Lỗi tải ảnh đợt tuyển khi mở form sửa:", err);
+    }
+
     setEditingCampaign(camp.campaignId);
     setCampaignForm({
       clubId: camp.clubId,
       title: camp.title,
       startDate: camp.startDate ? camp.startDate.split('T')[0] : "",
       endDate: camp.endDate ? camp.endDate.split('T')[0] : "",
-      isActive: camp.isActive
+      isActive: camp.isActive,
+      uploadFiles: [],
+      existingPhotos
     });
     setCampaignErrors({});
     setShowCampaignModal(true);
@@ -742,9 +905,43 @@ const DashboardContent = () => {
     };
 
     const result = editingCampaign ? await updateCampaign(editingCampaign, payload) : await createCampaign(payload);
-    if (result.success) setShowCampaignModal(false);
-    else if (result.validationErrors) setCampaignErrors(result.validationErrors);
-    else alert(result.message);
+
+    if (result.success) {
+      // Upload ảnh cho campaign nếu có
+      const uploadedFiles = campaignForm.uploadFiles || [];
+      if (uploadedFiles.length > 0) {
+        const createdCampaignId =
+          editingCampaign ||
+          result?.data?.campaignId ||
+          result?.data?.data?.campaignId ||
+          result?.data?.id ||
+          null;
+
+        if (!createdCampaignId) {
+          alert("Đợt tuyển đã lưu nhưng chưa xác định được campaignId để upload ảnh.");
+        } else {
+          for (let i = 0; i < uploadedFiles.length; i++) {
+            const item = uploadedFiles[i];
+            if (!item.title || !item.title.trim()) {
+              alert(`Ảnh ${i + 1}: Vui lòng nhập tiêu đề`);
+              return;
+            }
+            const formData = new FormData();
+            formData.append("File", item.file);
+            formData.append("Title", item.title.trim());
+            formData.append("Type", parseInt(item.type, 10));
+            formData.append("CampaignsId", createdCampaignId);
+            await photoService.upload(formData);
+          }
+        }
+      }
+
+      setShowCampaignModal(false);
+    } else if (result.validationErrors) {
+      setCampaignErrors(result.validationErrors);
+    } else {
+      alert(result.message);
+    }
   };
 
   const handleDeleteCampaign = async (id) => {
@@ -936,12 +1133,23 @@ const DashboardContent = () => {
             <UsersTable
               users={users}
               keyword={userKeyword}
-              onSearch={setUserKeyword}
+              onSearch={(value) => {
+                setUserPage(1);
+                setUserKeyword(value);
+              }}
               page={userPage}
               totalPages={userPaginationMeta.TotalPages}
               onPageChange={setUserPage}
               filterRole={userFilterRole}
-              onFilterChange={setUserFilterRole}
+              onFilterChange={(value) => {
+                setUserPage(1);
+                setUserFilterRole(value);
+              }}
+              filterIsActive={userFilterIsActive}
+              onFilterActiveChange={(value) => {
+                setUserPage(1);
+                setUserFilterIsActive(value);
+              }}
               onAdd={openAddUser}
               onEdit={openEditUser}
               onDelete={handleDeleteUser}
@@ -954,7 +1162,10 @@ const DashboardContent = () => {
             <ClubsTable
               clubs={clubs}
               keyword={keyword}
-              onSearch={setKeyword}
+              onSearch={(value) => {
+                setPage(1);
+                setKeyword(value);
+              }}
               page={page}
               totalPages={paginationMeta.TotalPages}
               onPageChange={setPage}
@@ -975,9 +1186,15 @@ const DashboardContent = () => {
               totalPages={memberPaginationMeta.TotalPages}
               onPageChange={setMemberPage}
               filterClub={memberFilterClub}
-              onFilterClubChange={setMemberFilterClub}
+              onFilterClubChange={(value) => {
+                setMemberPage(1);
+                setMemberFilterClub(value);
+              }}
               filterRole={memberFilterRole}
-              onFilterRoleChange={setMemberFilterRole}
+              onFilterRoleChange={(value) => {
+                setMemberPage(1);
+                setMemberFilterRole(value);
+              }}
               onAdd={openAddMember}
               onEdit={openEditMember}
               onDelete={handleDeleteMember}
@@ -991,14 +1208,23 @@ const DashboardContent = () => {
               events={events}
               clubs={clubs}
               keyword={eventKeyword}
-              onSearch={setEventKeyword}
+              onSearch={(value) => {
+                setEventPage(1);
+                setEventKeyword(value);
+              }}
               page={eventPage}
               totalPages={eventPaginationMeta.TotalPages}
               onPageChange={setEventPage}
               filterClub={eventFilterClub}
-              onFilterClubChange={setEventFilterClub}
+              onFilterClubChange={(value) => {
+                setEventPage(1);
+                setEventFilterClub(value);
+              }}
               filterIsPrivate={eventFilterIsPrivate}
-              onFilterIsPrivateChange={setEventFilterIsPrivate}
+              onFilterIsPrivateChange={(value) => {
+                setEventPage(1);
+                setEventFilterIsPrivate(value);
+              }}
               onAdd={openAddEvent}
               onEdit={openEditEvent}
               onDelete={handleDeleteEvent}
@@ -1013,9 +1239,15 @@ const DashboardContent = () => {
               events={events}
               users={users}
               selectedEventId={selectedEventId}
-              onEventChange={setSelectedEventId}
+              onEventChange={(value) => {
+                setRegPage(1);
+                setSelectedEventId(value);
+              }}
               keyword={regKeyword}
-              onSearch={setRegKeyword}
+              onSearch={(value) => {
+                setRegPage(1);
+                setRegKeyword(value);
+              }}
               page={regPage}
               totalPages={regPaginationMeta.TotalPages}
               onPageChange={setRegPage}
@@ -1030,9 +1262,18 @@ const DashboardContent = () => {
           {activeTab === "campaigns" && (
             <CampaignsTable
               campaigns={campaigns} clubs={clubs}
-              keyword={campKeyword} onSearch={setCampKeyword}
-              filterClub={campFilterClub} onFilterClubChange={setCampFilterClub}
-              filterIsActive={campFilterIsActive} onFilterIsActiveChange={setCampFilterIsActive}
+              keyword={campKeyword} onSearch={(value) => {
+                setCampPage(1);
+                setCampKeyword(value);
+              }}
+              filterClub={campFilterClub} onFilterClubChange={(value) => {
+                setCampPage(1);
+                setCampFilterClub(value);
+              }}
+              filterIsActive={campFilterIsActive} onFilterIsActiveChange={(value) => {
+                setCampPage(1);
+                setCampFilterIsActive(value);
+              }}
               page={campPage} totalPages={campPaginationMeta.TotalPages} onPageChange={setCampPage}
               onAdd={openAddCampaign} onEdit={openEditCampaign} onDelete={handleDeleteCampaign} onView={openViewCampaign}
             />
@@ -1042,12 +1283,22 @@ const DashboardContent = () => {
           {activeTab === "interviews" && (
             <InterviewBoard
               interviews={interviews} clubs={clubs} campaigns={campaigns} // TRUYỀN CAMPAIGNS
-              filterClub={intFilterClub} onFilterClubChange={setIntFilterClub}
-              filterStatus={intFilterStatus} onFilterStatusChange={setIntFilterStatus}
-              filterResult={intFilterResult} onFilterResultChange={setIntFilterResult}
+              filterClub={intFilterClub} onFilterClubChange={(value) => {
+                setIntFilterClub(value);
+              }}
+              filterStatus={intFilterStatus} onFilterStatusChange={(value) => {
+                setIntFilterStatus(value);
+              }}
+              filterResult={intFilterResult} onFilterResultChange={(value) => {
+                setIntFilterResult(value);
+              }}
               filterCampaign={filterCampaign} 
-              onFilterCampaignChange={setFilterCampaign}
-              keyword={intKeyword} onSearch={setIntKeyword}
+              onFilterCampaignChange={(value) => {
+                setFilterCampaign(value);
+              }}
+              keyword={intKeyword} onSearch={(value) => {
+                setIntKeyword(value);
+              }}
               onAddWalkIn={openAddWalkIn} onCheckIn={handleCheckIn} onOpenStart={openStart} 
               onOpenFinish={openFinish} onOpenUpdateResult={openUpdateResult}
               onNoShow={handleNoShow} onCancel={handleCancel} onSendEmail={handleSendEmail} onView={openViewInterview}

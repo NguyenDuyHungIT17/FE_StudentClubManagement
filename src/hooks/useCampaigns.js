@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { campaignService } from '../services/campaignService';
 
 export const useCampaigns = () => {
@@ -20,8 +20,6 @@ export const useCampaigns = () => {
     finally { setLoading(false); }
   }, [keyword, filterClub, filterIsActive, page]);
 
-  useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
-
   const handleApiCall = async (apiFunc, ...args) => {
     try {
       const res = await apiFunc(...args);
@@ -34,7 +32,8 @@ export const useCampaigns = () => {
   };
 
   return {
-    campaigns, loading, keyword, setKeyword, filterClub, setFilterClub, filterIsActive, setFilterIsActive, page, setPage, paginationMeta, fetchCampaigns,
+    campaigns, loading, fetchCampaigns,
+    keyword, setKeyword, filterClub, setFilterClub, filterIsActive, setFilterIsActive, page, setPage, paginationMeta,
     createCampaign: (data) => handleApiCall(campaignService.create, data),
     updateCampaign: (id, data) => handleApiCall(campaignService.update, id, data),
     deleteCampaign: (id) => handleApiCall(campaignService.delete, id)

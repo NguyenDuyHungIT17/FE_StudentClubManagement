@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { interviewService } from '../services/interviewService';
 
 export const useInterviews = () => {
@@ -25,8 +25,6 @@ const [filterCampaign, setFilterCampaign] = useState("all");
       setLoading(false);
     }
   }, [keyword, filterClub, filterCampaign, filterStatus, filterResult, page, pageSize]);
-
-  useEffect(() => { fetchInterviews(); }, [fetchInterviews]);
 
   const handleApiCall = async (apiFunc, ...args) => {
     try {

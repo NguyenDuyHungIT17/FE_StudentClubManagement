@@ -6,6 +6,8 @@ import PhotoGallery from "../common/PhotoGallery";
 // 👉 TÁCH RIÊNG COMPONENT ĐỂ MEMOIZE
 const MultiImageUploader = React.memo(({ formState, setFormState, entityType = "user" }) => {
   const files = formState.uploadFiles || [];
+  const existingPhotos = formState.existingPhotos || [];
+  const isUserUploader = entityType === "user";
 
   const handleFileSelect = useCallback((e) => {
     const selectedFiles = Array.from(e.target.files);
@@ -44,6 +46,32 @@ const MultiImageUploader = React.memo(({ formState, setFormState, entityType = "
         <input type="file" multiple accept="image/*" onChange={handleFileSelect} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%' }} />
       </div>
 
+      {existingPhotos.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 10 }}>
+            Ảnh hiện có
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
+            {existingPhotos.map((photo) => {
+              const pid = photo.photoId || photo.id;
+              return (
+                <div key={pid} style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', background: '#fff' }}>
+                  <img src={photo.url} alt={photo.title || 'photo'} style={{ width: '100%', height: 110, objectFit: 'cover', display: 'block' }} />
+                  <div style={{ padding: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {photo.title || 'Không có tiêu đề'}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 4 }}>
+                      {Number(photo.type) === 1 ? 'Main' : Number(photo.type) === 2 ? 'Cover' : Number(photo.type) === 3 ? 'Side' : 'Other'}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {files.length > 0 && (
         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {files.map((item, index) => {
@@ -57,6 +85,7 @@ const MultiImageUploader = React.memo(({ formState, setFormState, entityType = "
                 onTitleChange={updateFileTitle}
                 onTypeChange={updateFileType}
                 onRemove={removeFile}
+                titleAsTextarea={isUserUploader}
               />
             );
           })}
@@ -69,17 +98,27 @@ const MultiImageUploader = React.memo(({ formState, setFormState, entityType = "
 MultiImageUploader.displayName = "MultiImageUploader";
 
 // 👉 COMPONENT CHO TỪNG ẢNH
-const ImageUploadItem = React.memo(({ item, index, objectUrl, onTitleChange, onTypeChange, onRemove }) => (
+const ImageUploadItem = React.memo(({ item, index, objectUrl, onTitleChange, onTypeChange, onRemove, titleAsTextarea = false }) => (
   <div style={{ display: 'flex', gap: 12, padding: 12, border: '1px solid var(--border)', borderRadius: 8, background: '#f8fafc' }}>
     <img src={objectUrl} alt="preview" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 6 }} />
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <input 
-        type="text" 
-        placeholder="Nhập tiêu đề ảnh" 
-        value={item.title} 
-        onChange={(e) => onTitleChange(index, e.target.value)}
-        style={{ padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13 }}
-      />
+      {titleAsTextarea ? (
+        <textarea
+          placeholder="Nhập tiêu đề ảnh (có thể xuống dòng)"
+          value={item.title}
+          onChange={(e) => onTitleChange(index, e.target.value)}
+          rows={3}
+          style={{ padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13, resize: 'vertical' }}
+        />
+      ) : (
+        <input 
+          type="text" 
+          placeholder="Nhập tiêu đề ảnh" 
+          value={item.title} 
+          onChange={(e) => onTitleChange(index, e.target.value)}
+          style={{ padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13 }}
+        />
+      )}
       <select 
         value={item.type} 
         onChange={(e) => onTypeChange(index, e.target.value)}
@@ -218,7 +257,7 @@ const AdminDashboardModals = ({
           <ViewItem label="Email" value={viewingUser.email} />
           <ViewItem label="Vai trò" value={viewingUser.role} />
           <ViewItem label="Trạng thái" value={viewingUser.isActive ? "Active" : "Inactive"} />
-          <PhotoGallery entityType="user" entityId={viewingUser.userId} />
+          <PhotoGallery entityType="user" entityId={viewingUser.userId} readOnly={true} />
           <button className="btn" style={{ width: '100%', justifyContent: 'center', border: '1px solid var(--border)', marginTop: 24 }} onClick={() => setShowViewUserModal(false)}>Đóng</button>
         </Modal>
       )}
@@ -246,9 +285,9 @@ const AdminDashboardModals = ({
             
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4, display: 'block' }}>Trưởng CLB (Tuỳ chọn)</label>
-              <select className="input-control" style={{ borderColor: clubErrors?.leaderId ? '#ef4444' : '' }} value={clubForm.leaderId || ""} onChange={e => { setClubForm({ ...clubForm, leaderId: e.target.value }); if (clubErrors?.leaderId) setClubErrors({ ...clubErrors, leaderId: null }); }}>
+              <select className="input-control" style={{ borderColor: clubErrors?.leaderId ? '#ef4444' : '' }} value={clubForm.leaderId ?? ""} onChange={e => { setClubForm({ ...clubForm, leaderId: e.target.value }); if (clubErrors?.leaderId) setClubErrors({ ...clubErrors, leaderId: null }); }}>
                 <option value="">-- Chưa có Trưởng CLB (Bỏ trống) --</option>
-                {(leaderUsers?.length ? leaderUsers : users?.filter(u => u.role === 'leader' || u.role === 'admin') || []).map(u => ( <option key={u.userId} value={u.userId}>{u.fullName} ({u.email})</option> ))}
+                {(leaderUsers?.length ? leaderUsers : users?.filter(u => ['leader', 'admin'].includes(String(u.role || '').toLowerCase())) || []).map(u => ( <option key={u.userId} value={String(u.userId)}>{u.fullName} ({u.email})</option> ))}
               </select>
             </div>
             
@@ -521,6 +560,8 @@ const AdminDashboardModals = ({
                 <option value="false">Đã đóng</option>
               </select>
             </div>
+
+            <MultiImageUploader formState={campaignForm} setFormState={setCampaignForm} entityType="campaign" />
             
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={handleSaveCampaign}>{editingCampaign ? "Cập nhật" : "Tạo Đợt tuyển"}</button>
           </div>
@@ -533,6 +574,7 @@ const AdminDashboardModals = ({
           <ViewItem label="Thuộc CLB" value={viewingCampaign.clubName} />
           <ViewItem label="Thời gian" value={`${viewingCampaign.startDate ? new Date(viewingCampaign.startDate).toLocaleDateString('vi-VN') : '...'} - ${viewingCampaign.endDate ? new Date(viewingCampaign.endDate).toLocaleDateString('vi-VN') : '...'}`} />
           <ViewItem label="Trạng thái" value={viewingCampaign.isActive ? "Đang mở" : "Đã đóng"} />
+          <PhotoGallery entityType="campaign" entityId={viewingCampaign.campaignId} readOnly={true} />
         </Modal>
       )}
 

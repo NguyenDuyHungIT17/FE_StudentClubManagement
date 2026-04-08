@@ -1,7 +1,6 @@
 // src/hooks/useEvents.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { eventService } from '../services/eventService';
-import { photoService } from '../services/photoService';
 
 export const useEvents = () => {
   const [events, setEvents] = useState([]);
@@ -23,30 +22,15 @@ export const useEvents = () => {
       const response = await eventService.getAll(keyword, filterClub, filterIsPrivate, page, pageSize);
       const rawEvents = response.data || [];
 
-      const eventsWithPhoto = await Promise.all(
-        rawEvents.map(async (event) => {
-          try {
-            const photoResponse = await photoService.getByEvent(event.id);
-            const photoUrl = photoService.selectBestPhotoUrl(photoResponse, [2, 1, 3]);
-            return { ...event, photoUrl };
-          } catch {
-            return { ...event, photoUrl: null };
-          }
-        })
-      );
-
-      setEvents(eventsWithPhoto);
+      // Backend now provides photoUrl directly - no need for N+1 photo fetches
+      setEvents(rawEvents);
       setPaginationMeta(response.pagination);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [keyword, filterClub, filterIsPrivate, page, pageSize]);
-
-  useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]); 
+  }, [keyword, filterClub, filterIsPrivate, page, pageSize]); 
 
   const createEvent = async (data) => {
     try {

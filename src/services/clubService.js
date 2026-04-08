@@ -47,6 +47,13 @@ getAll: async (keyword = "", pageNumber = 1, pageSize = 10) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(clubData),
   }),
+
+  getById: async (clubId) => {
+    const res = await apiRequest(`/Clubs/${clubId}`, {
+      method: 'GET'
+    });
+    return res?.data || res?.value || res || null;
+  },
   
   update: (clubId, clubData) => apiRequest(`/Clubs/${clubId}`, {
     method: 'PUT',

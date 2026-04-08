@@ -42,6 +42,22 @@ export const interviewService = {
   
   getById: (id) => apiRequest(`/interviews/${id}`, { method: 'GET' }),
   createWalkIn: (data) => apiRequest('/interviews/walkin', { method: 'POST', body: JSON.stringify(data) }),
+  createWeb: async (data) => {
+    const response = await fetch(`${API_BASE_URL}/interviews/web`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json().catch(() => null);
+    if (!response.ok || result?.isSuccess === false) {
+      throw new Error(result?.message || 'Gửi hồ sơ thất bại');
+    }
+    return result;
+  },
   update: (id, data) => apiRequest(`/interviews/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => apiRequest(`/interviews/${id}`, { method: 'DELETE' }),
   checkIn: (id) => apiRequest(`/interviews/${id}/checkin`, { method: 'POST', body: JSON.stringify({}) }),

@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { userService } from '../services/userService';
-import { photoService } from '../services/photoService';
 
 export const useUsers = () => {
   const [users, setUsers] = useState([]);
@@ -10,6 +9,7 @@ export const useUsers = () => {
   // States quản lý bảng
   const [keyword, setKeyword] = useState("");
   const [filterRole, setFilterRole] = useState("all"); // <-- Thêm state lọc Role
+  const [filterIsActive, setFilterIsActive] = useState("1"); // <-- Mặc định load Active (1)
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [paginationMeta, setPaginationMeta] = useState({ TotalPages: 1, TotalCount: 0 });
@@ -20,33 +20,18 @@ export const useUsers = () => {
     setError(null);
     try {
       // Truyền thêm filterRole vào API
-      const response = await userService.getAll(keyword, filterRole, page, pageSize);
+      const response = await userService.getAll(keyword, filterRole, page, pageSize, filterIsActive);
       const rawUsers = response.data || [];
 
-      const usersWithPhoto = await Promise.all(
-        rawUsers.map(async (user) => {
-          try {
-            const photoResponse = await photoService.getByUser(user.userId);
-            const photoUrl = photoService.selectBestPhotoUrl(photoResponse, [1, 3, 2]);
-            return { ...user, photoUrl };
-          } catch {
-            return { ...user, photoUrl: null };
-          }
-        })
-      );
-
-      setUsers(usersWithPhoto);
+      // Backend now provides photoUrl directly - no need for N+1 photo fetches
+      setUsers(rawUsers);
       setPaginationMeta(response.pagination);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [keyword, filterRole, page, pageSize]); // Tự động load lại khi 1 trong 4 biến này đổi
-
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]); 
+  }, [keyword, filterRole, filterIsActive, page, pageSize]); // Tự động load lại khi filter đổi 
 
   const createUser = async (userData) => {
     try {
@@ -85,6 +70,7 @@ export const useUsers = () => {
     users, loading, error,
     keyword, setKeyword, 
     filterRole, setFilterRole, // <-- Trả ra ngoài cho Giao diện dùng
+    filterIsActive, setFilterIsActive,
     page, setPage, 
     paginationMeta,
     fetchUsers, createUser, updateUser, deleteUser,
