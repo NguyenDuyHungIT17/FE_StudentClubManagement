@@ -23,12 +23,14 @@
 
 .portal-row { display: flex; flex-wrap: wrap; margin: 0 -15px; }
 .portal-col-8 { width: 66.666%; padding: 0 15px; box-sizing: border-box; }
+.portal-col-7 { width: 58.333%; padding: 0 15px; box-sizing: border-box; }
+.portal-col-5 { width: 41.666%; padding: 0 15px; box-sizing: border-box; }
 .portal-col-4 { width: 33.333%; padding: 0 15px; box-sizing: border-box; }
 .portal-col-3 { width: 25%; padding: 0 15px; box-sizing: border-box; }
 .portal-col-6 { width: 50%; padding: 0 15px; box-sizing: border-box; }
 
 @media (max-width: 992px) {
-  .portal-col-8, .portal-col-4, .portal-col-3, .portal-col-6 { width: 100%; margin-bottom: 20px; }
+  .portal-col-8, .portal-col-7, .portal-col-6, .portal-col-5, .portal-col-4, .portal-col-3 { width: 100%; margin-bottom: 20px; }
 }
 
 /* Các Card được bo góc tròn trịa, bóng mờ */

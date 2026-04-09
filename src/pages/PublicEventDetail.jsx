@@ -6,6 +6,7 @@ import PublicFooter from "../components/public/PublicFooter";
 import { API_BASE_URL } from "../services/api";
 import { eventRegistrationService } from "../services/eventRegistrationService";
 import { eventService } from "../services/eventService";
+import { photoService } from "../services/photoService";
 import "../styles/PublicPortal.css";
 
 const DOMAIN_URL = API_BASE_URL.replace("/api", "");
@@ -18,6 +19,9 @@ const PublicEventDetail = () => {
   const [eventData, setEventData] = useState(location.state?.event || null);
   const [clubName, setClubName] = useState(location.state?.clubName || "Câu lạc bộ");
   const [loading, setLoading] = useState(!location.state?.event);
+
+  const [eventPhotos, setEventPhotos] = useState([]);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const [form, setForm] = useState({ guestName: "", guestEmail: "" });
   const [submitting, setSubmitting] = useState(false);
@@ -54,6 +58,57 @@ const PublicEventDetail = () => {
 
     fetchEvent();
   }, [eventId, eventData]);
+
+  useEffect(() => {
+    const fetchEventPhotos = async () => {
+      if (!eventId) return;
+      try {
+        const photoRes = await photoService.getByEvent(eventId);
+        setEventPhotos(photoService.normalizePhotos(photoRes));
+      } catch {
+        setEventPhotos([]);
+      }
+    };
+
+    fetchEventPhotos();
+  }, [eventId]);
+
+  const eventImageUrls = useMemo(() => {
+    const urls = [];
+    if (eventData?.photoUrl) urls.push(getImageUrl(eventData.photoUrl));
+
+    (eventPhotos || []).forEach((p) => {
+      const resolved = getImageUrl(p?.url);
+      if (resolved && !urls.includes(resolved)) urls.push(resolved);
+    });
+
+    return urls;
+  }, [eventData?.photoUrl, eventPhotos]);
+
+  useEffect(() => {
+    if (!eventImageUrls || eventImageUrls.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setActiveImageIndex((prev) => (prev + 1) % eventImageUrls.length);
+    }, 2000);
+
+    return () => window.clearInterval(timer);
+  }, [eventImageUrls]);
+
+  useEffect(() => {
+    if (!eventImageUrls || eventImageUrls.length === 0) return;
+    if (activeImageIndex > eventImageUrls.length - 1) setActiveImageIndex(0);
+  }, [eventImageUrls, activeImageIndex]);
+
+  const goPrevImage = () => {
+    if (!eventImageUrls || eventImageUrls.length === 0) return;
+    setActiveImageIndex((prev) => (prev - 1 + eventImageUrls.length) % eventImageUrls.length);
+  };
+
+  const goNextImage = () => {
+    if (!eventImageUrls || eventImageUrls.length === 0) return;
+    setActiveImageIndex((prev) => (prev + 1) % eventImageUrls.length);
+  };
 
   const eventDateText = useMemo(() => {
     if (!eventData?.eventDate) return "Đang cập nhật";
@@ -104,14 +159,66 @@ const PublicEventDetail = () => {
           ) : (
             <div className="portal-row">
               <div className="portal-col-7">
-                <div style={{ background: "#fff", borderRadius: 24, border: "1px solid #e2e8f0", padding: 28, boxShadow: "0 10px 30px rgba(2,6,23,0.05)" }}>
+                <div style={{ background: "#fff", borderRadius: 24, border: "1px solid #e2e8f0", padding: 28, boxShadow: "0 10px 30px rgba(2,6,23,0.05)", height: "100%" }}>
                   <div className="portal-badge" style={{ marginBottom: 10 }}>PUBLIC EVENT</div>
                   <h1 style={{ margin: "0 0 10px 0", fontSize: 34, lineHeight: 1.2, color: "#0f172a", fontWeight: 900 }}>{eventData.title}</h1>
                   <div style={{ color: "#475569", marginBottom: 20, fontWeight: 700 }}>{clubName}</div>
 
-                  {eventData.photoUrl && (
-                    <div style={{ marginBottom: 16, borderRadius: 14, overflow: "hidden", border: "1px solid #e2e8f0" }}>
-                      <img src={getImageUrl(eventData.photoUrl)} alt={eventData.title} style={{ width: "100%", maxHeight: 300, objectFit: "cover", display: "block" }} />
+                  {eventImageUrls.length > 0 && (
+                    <div style={{ marginBottom: 16, borderRadius: 14, overflow: "hidden", border: "1px solid #e2e8f0", position: "relative", background: "#fff" }}>
+                      <img
+                        src={eventImageUrls[activeImageIndex]}
+                        alt={eventData.title}
+                        style={{ width: "100%", height: 300, objectFit: "cover", display: "block" }}
+                      />
+
+                      {eventImageUrls.length > 1 && (
+                        <div style={{ position: "absolute", inset: 10, display: "flex", alignItems: "center", justifyContent: "space-between", pointerEvents: "none" }}>
+                          <button
+                            type="button"
+                            onClick={goPrevImage}
+                            style={{
+                              pointerEvents: "auto",
+                              width: 40,
+                              height: 40,
+                              borderRadius: 12,
+                              border: "1px solid #e2e8f0",
+                              background: "rgba(255,255,255,0.92)",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: 900,
+                              color: "#0f172a"
+                            }}
+                            aria-label="Ảnh trước"
+                          >
+                            ‹
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={goNextImage}
+                            style={{
+                              pointerEvents: "auto",
+                              width: 40,
+                              height: 40,
+                              borderRadius: 12,
+                              border: "1px solid #e2e8f0",
+                              background: "rgba(255,255,255,0.92)",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: 900,
+                              color: "#0f172a"
+                            }}
+                            aria-label="Ảnh sau"
+                          >
+                            ›
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -134,7 +241,14 @@ const PublicEventDetail = () => {
               </div>
 
               <div className="portal-col-5">
-                <div style={{ background: "linear-gradient(145deg,#fff,#f8fafc)", borderRadius: 24, border: "1px solid #e2e8f0", padding: 24, boxShadow: "0 10px 30px rgba(2,6,23,0.05)" }}>
+                <div
+                  style={{
+                    position: "sticky",
+                    top: 110,
+                    alignSelf: "flex-start"
+                  }}
+                >
+                  <div style={{ background: "linear-gradient(145deg,#fff,#f8fafc)", borderRadius: 24, border: "1px solid #e2e8f0", padding: 24, boxShadow: "0 10px 30px rgba(2,6,23,0.05)", display: "flex", flexDirection: "column" }}>
                   <h2 style={{ margin: 0, fontSize: 22, color: "#0f172a", fontWeight: 900 }}>Check-in khách tham gia</h2>
                   <p style={{ color: "#64748b", marginTop: 8, marginBottom: 16 }}>Điền thông tin để đăng ký tham gia sự kiện.</p>
 
@@ -179,6 +293,22 @@ const PublicEventDetail = () => {
                       </button>
                     </form>
                   )}
+
+                  <div style={{ borderTop: "1px solid #e2e8f0", marginTop: 16, paddingTop: 14 }}>
+                    <div style={{ fontWeight: 900, color: "#0f172a", marginBottom: 10 }}>Thông tin nhanh</div>
+                    <div style={{ display: "grid", gap: 10, color: "#334155" }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <Calendar size={16} /> {eventDateText}
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <MapPin size={16} /> Trực tiếp tại trường / theo thông báo CLB
+                      </div>
+                      <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>
+                        Nếu bạn nhập sai email/họ tên, bạn có thể đăng ký lại bằng thông tin đúng.
+                      </div>
+                    </div>
+                  </div>
+                  </div>
                 </div>
               </div>
             </div>
