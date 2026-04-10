@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { decodeToken } from "../utils/tokenUtils";
+import { decodeToken, getToken, getUserIdFromToken } from "../utils/tokenUtils";
+import { eventService } from "../services/eventService";
+import { eventRegistrationService } from "../services/eventRegistrationService";
 
 // Hook quản lý toàn bộ logic của Dashboard
 export const useMemberDashboard = () => {
@@ -8,28 +10,29 @@ export const useMemberDashboard = () => {
   const [registeredEventIds, setRegisteredEventIds] = useState([]);
   
   // User info
-  const token = localStorage.getItem("token");
+  const token = getToken();
   const fullName = localStorage.getItem("fullName") || "Alex Morgan"; // Default giống ảnh
   const decodedToken = decodeToken(token);
   const userClubId = decodedToken?.clubId || null;
+  const userIdFromToken = getUserIdFromToken();
 
   useEffect(() => {
     if (token) {
       fetchData();
+    } else {
+      setLoading(false);
     }
   }, [token]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Giả lập hoặc gọi API thật
-      const res = await fetch("https://localhost:7251/api/Event", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setEvents(data || []);
+      // Dùng service chung để tránh lệch format response
+      const result = await eventService.getAll("", "all", "all", 1, 200);
+      setEvents(Array.isArray(result?.data) ? result.data : []);
     } catch (error) {
       console.error("Fetch error:", error);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -37,23 +40,22 @@ export const useMemberDashboard = () => {
 
   const handleRegister = async (eventId) => {
     try {
-      const res = await fetch("https://localhost:7251/api/EventRegistrations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          eventId: eventId,
-          userId: parseInt(localStorage.getItem("userId") || "0"),
-          checkName: fullName
-        })
+      const fallbackUserId = localStorage.getItem("userId");
+      const userId = parseInt(String(userIdFromToken || fallbackUserId || "0"), 10);
+      await eventRegistrationService.create({
+        eventId,
+        userId,
+        checkName: fullName,
       });
-      if (res.ok) {
+
+      if (!registeredEventIds.includes(eventId)) {
         setRegisteredEventIds(prev => [...prev, eventId]);
-        alert("Registered successfully!");
       }
-    } catch (err) { alert("Registration failed"); }
+
+      alert("Registered successfully!");
+    } catch (err) {
+      alert(err?.message || "Registration failed");
+    }
   };
 
   return {

@@ -13,6 +13,7 @@ import MemberDashboard from "./pages/MemberDashboard";
 import ClubDetail from "./pages/ClubDetail";
 import AddInterview from "./pages/AddInterview";
 import LeaderAddInterview from "./pages/LeaderAddInterview";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -27,9 +28,30 @@ function App() {
         <Route path="/public/events/:eventId" element={<PublicEventDetail />} />
         <Route path="/public/apply/:campaignId" element={<PublicApplyCampaign />} />
         <Route path="/clubs/:clubId" element={<ClubDetail />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/leader" element={<LeaderDashboard />} />
-        <Route path="/member" element={<MemberDashboard />} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leader"
+          element={
+            <ProtectedRoute role="leader">
+              <LeaderDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/member"
+          element={
+            <ProtectedRoute role="member">
+              <MemberDashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/admin/interview/add" element={<AddInterview />} />
         <Route path="/leader/interview/add" element={<LeaderAddInterview />} />
       </Routes>

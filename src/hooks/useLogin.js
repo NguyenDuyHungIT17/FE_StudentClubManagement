@@ -25,7 +25,7 @@ export const useLogin = () => {
                 case "admin": navigate("/admin"); break;
                 case "leader": navigate("/leader"); break;
                 case "member": navigate("/member"); break;
-                default: navigate("/home");
+                default: navigate("/");
             }
         } catch (err) {
             setError(err.message);

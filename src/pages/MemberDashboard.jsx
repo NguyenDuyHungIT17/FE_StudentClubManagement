@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import "../styles/UniClubsTheme.css"; // Import CSS Global
 
 // Components
@@ -6,7 +6,6 @@ import Sidebar from "../components/common/Sidebar";
 import StatsSection from "../components/dashboard/StatsSection";
 import EventList from "../components/tables/EventList";
 import ChatWidget from "../components/chat/ChatWidget";
-import PrivateChatWidget from "../components/chat/PrivateChatWidget";
 
 // Logic Hook
 import { useMemberDashboard } from "../hooks/useMemberDashboard";
@@ -15,6 +14,8 @@ import { useMemberDashboard } from "../hooks/useMemberDashboard";
 import { Bell, Plus } from "lucide-react";
 
 const MemberDashboard = () => {
+  const [activeTab, setActiveTab] = useState("events");
+
   // Lấy dữ liệu và hàm từ Hook
   const { 
     events, 
@@ -26,7 +27,7 @@ const MemberDashboard = () => {
   return (
     <div className="dashboard-layout">
       {/* 1. Sidebar bên trái */}
-      <Sidebar fullName={userData.fullName} />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* 2. Main Content bên phải */}
       <main className="main-content">
@@ -50,11 +51,13 @@ const MemberDashboard = () => {
         <StatsSection />
 
         {/* Main List (Event Directory) */}
-        <EventList 
-          events={events}
-          registeredIds={registeredEventIds}
-          onRegister={handleRegister}
-        />
+        {activeTab === "events" && (
+          <EventList 
+            events={events}
+            registeredIds={registeredEventIds}
+            onRegister={handleRegister}
+          />
+        )}
         
         {/* Chat Widgets (Giữ nguyên logic cũ của bạn) */}
         <ChatWidget clubId={userData.userClubId} clubName="Community Chat" />

@@ -5,7 +5,7 @@ const EventList = ({ events, registeredIds, onRegister }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filtered = events.filter(ev => 
-    ev.title.toLowerCase().includes(searchTerm.toLowerCase())
+    String(ev?.title || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -74,10 +74,10 @@ const EventList = ({ events, registeredIds, onRegister }) => {
               {/* Event Name + Desc */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 40, height: 40, background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                   {ev.title.charAt(0)}
+                   {String(ev?.title || "?").charAt(0)}
                 </div>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{ev.title}</div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{ev.title || "(No title)"}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>Est. 2024</div>
                 </div>
               </div>
