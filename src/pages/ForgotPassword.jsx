@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 import bg from "../assets/bg.jpg";
+import { API_BASE_URL } from "../services/api";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -14,16 +15,16 @@ const ForgotPassword = () => {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("https://localhost:7251/api/Auth/forgot-password", {
+      const res = await fetch(`${API_BASE_URL}/Auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
       if (!res.ok) {
         const errData = await res.text();
-        throw new Error(errData || "Lỗi gửi email");
+        throw new Error(errData || "Lỗi gửi email. Vui lòng kiểm tra lại.");
       }
-      // Nếu gửi thành công, chuyển luôn sang trang reset-password
+      // Gửi thành công -> chuyển sang trang reset-password mang theo state email
       navigate("/reset-password", { state: { email } });
     } catch (err) {
       setError(err.message);
@@ -61,37 +62,42 @@ const ForgotPassword = () => {
           Quên mật khẩu
         </h5>
         <p className="text-center mb-3" style={{ color: "#374151" }}>
-          Nhập email để nhận mã xác thực đổi mật khẩu.
+          Nhập email của bạn để nhận mã khôi phục.
         </p>
-        {error && <div className="alert alert-danger py-2">{error}</div>}
+
+        {error && <div className="alert alert-danger py-2 px-3 text-center" style={{fontSize: 14}}>{error}</div>}
+        
         <form onSubmit={handleSubmit}>
-          <div className="mb-3">
+          <div className="mb-4">
             <label className="form-label fw-semibold">Email</label>
             <input
               type="email"
-              className="form-control rounded-pill"
-              placeholder="Nhập email..."
+              className="form-control rounded-pill px-3"
+              placeholder="VD: sv@domain.edu.vn"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={loading}
             />
           </div>
+          
           <button
             type="submit"
-            className="btn w-100 fw-bold rounded-pill"
-            style={{ backgroundColor: "#ff7a18", color: "#fff" }}
+            className="btn w-100 fw-bold rounded-pill shadow-sm"
+            style={{ backgroundColor: "#ff7a18", color: "#fff", padding: "10px 0" }}
             disabled={loading}
           >
-            {loading ? "Đang gửi..." : "Gửi mã xác thực"}
+            {loading ? "Đang xử lý..." : "Gửi Mã Xác Thực"}
           </button>
         </form>
-        <div className="text-center mt-3">
+
+        <div className="text-center mt-4">
           <button
-            className="btn btn-link fw-bold"
-            style={{ color: "#ff7a18", textDecoration: "underline" }}
+            className="btn btn-link fw-bold p-0"
+            style={{ color: "#ff7a18", textDecoration: "none", fontSize: 14 }}
             onClick={() => navigate("/login")}
           >
-            Quay lại đăng nhập
+            ← Quay lại đăng nhập
           </button>
         </div>
       </div>

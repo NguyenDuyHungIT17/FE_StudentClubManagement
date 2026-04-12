@@ -57,6 +57,17 @@ export const userService = {
     body: JSON.stringify(userData),
   }),
   
+  // Lấy thông tin chi tiết user
+  getById: (userId) => apiRequest(`/Users/${userId}`, {
+    method: 'GET',
+  }),
+
+  // Đổi mật khẩu
+  changePassword: (userId, passwordData) => apiRequest(`/Users/${userId}/password`, {
+    method: 'PUT',
+    body: JSON.stringify(passwordData),
+  }),
+
   // Cập nhật user
   update: (userId, userData) => apiRequest(`/Users/${userId}`, {
     method: 'PUT',
