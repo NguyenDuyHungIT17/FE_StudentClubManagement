@@ -1,19 +1,20 @@
-import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import logo from "../assets/logo.png";
-import bg from "../assets/bg.jpg";
+import React, { useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { AlertCircle, ArrowLeft, CheckCircle2, KeyRound, Lock, Mail, ShieldCheck } from "lucide-react";
+import "../styles/AuthTheme.css";
+import logo from "../assets/logo_ngang.svg";
 import { API_BASE_URL } from "../services/api";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Tự động điền email từ trang ForgotPassword truyền sang
-  const [email, setEmail] = useState(location.state?.email || "");
+
+  const initialEmail = useMemo(() => location.state?.email || "", [location.state]);
+
+  const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState(""); // Thêm trường confirm pass
-  
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,12 +25,21 @@ const ResetPassword = () => {
     setError("");
     setMessage("");
 
-    // Validate cục bộ trước khi gọi API
+    if (!email.trim()) {
+      setError("Vui lòng nhập email xác thực.");
+      return;
+    }
+    if (!code.trim()) {
+      setError("Vui lòng nhập mã xác thực.");
+      return;
+    }
     if (newPassword !== confirmPassword) {
-      return setError("Mật khẩu xác nhận không khớp.");
+      setError("Mật khẩu xác nhận không khớp.");
+      return;
     }
     if (newPassword.length < 6) {
-      return setError("Mật khẩu mới phải có ít nhất 6 ký tự.");
+      setError("Mật khẩu mới phải có ít nhất 6 ký tự.");
+      return;
     }
 
     setLoading(true);
@@ -37,155 +47,203 @@ const ResetPassword = () => {
       const res = await fetch(`${API_BASE_URL}/Auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code, newPassword }),
+        body: JSON.stringify({
+          email: email.trim(),
+          code: code.trim(),
+          newPassword,
+        }),
       });
-      
+
       if (!res.ok) {
-        const errData = await res.text();
-        throw new Error(errData || "Mã xác nhận không hợp lệ hoặc đã hết hạn.");
+        const errText = await res.text();
+        throw new Error(errText || "Không thể đặt lại mật khẩu.");
       }
-      
-      const msg = await res.text();
-      setMessage(msg || "Đặt lại mật khẩu thành công!");
+
+      const responseText = await res.text();
+      setMessage(responseText || "Đặt lại mật khẩu thành công.");
       setShowSuccess(true);
-      
-      // Hiệu ứng: sau 2.5 giây tự động chuyển về màn hình đăng nhập
+
       setTimeout(() => {
         navigate("/login");
-      }, 2500);
+      }, 1800);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Có lỗi xảy ra.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div
-      className="d-flex align-items-center justify-content-center"
-      style={{
-        width: "100vw",
-        height: "100vh",
-        backgroundImage: `url(${bg})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div
-        className="card shadow-lg p-5"
-        style={{
-          width: "420px",
-          borderRadius: "20px",
-          backgroundColor: "rgba(255, 255, 255, 0.95)",
-          position: "relative",
-        }}
-      >
-        <div className="text-center mb-4">
-          <img src={logo} alt="Logo" style={{ width: "80px" }} />
-          <h3 className="mt-3 fw-bold" style={{ color: "#ff7a18" }}>
-            Student Club
-          </h3>
-        </div>
-        <h5 className="fw-bold mb-3 text-center" style={{ color: "#ff7a18" }}>
-          Đặt Lại Mật Khẩu
-        </h5>
+    <div className="auth-container">
+      <div className="auth-banner">
+        <img src={logo} alt="Logo" style={{ width: 420, maxWidth: "90%" }} />
+      </div>
 
-        {error && <div className="alert alert-danger py-2 px-3 text-center" style={{fontSize: 14}}>{error}</div>}
-        
-        {message && showSuccess && (
+      <div className="auth-form-section">
+        <div className="auth-box" style={{ maxWidth: 480 }}>
           <div
-            className="alert alert-success py-3 text-center animate__animated animate__fadeInDown"
             style={{
-              fontSize: "16px",
-              fontWeight: "bold",
-              color: "#16a34a",
-              background: "#dcfce7",
-              borderRadius: "12px",
-              border: "2px solid #bbf7d0",
+              width: 64,
+              height: 64,
+              borderRadius: 18,
+              background: "linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#2563eb",
+              marginBottom: 20,
             }}
           >
-            <span>✅ {message}</span>
-            <br />
-            <span style={{ fontSize: "14px", color: "#374151", fontWeight: "normal", display: "inline-block", marginTop: 8 }}>
-              Đang tự động chuyển về Đăng nhập...
-            </span>
+            <KeyRound size={28} />
           </div>
-        )}
 
-        {!showSuccess && (
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label className="form-label fw-semibold" style={{fontSize: 14}}>Email xác thực</label>
-              <input
-                type="email"
-                className="form-control rounded-pill px-3 bg-light"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                readOnly // Không cho sửa email ở bước này
-              />
+          <h2 className="auth-title">Đặt lại mật khẩu</h2>
+          <p className="auth-subtitle" style={{ marginBottom: 24, lineHeight: 1.6 }}>
+            Nhập mã xác thực đã nhận trong email, sau đó đặt mật khẩu mới cho tài khoản của bạn.
+          </p>
+
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+              marginBottom: 24,
+              padding: 18,
+              borderRadius: 16,
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
+            }}
+          >
+            <div style={{ display: "flex", gap: 10, alignItems: "center", color: "#334155", fontSize: 14, fontWeight: 600 }}>
+              <ShieldCheck size={18} color="#16a34a" />
+              Mã xác thực thường là mã ngắn được gửi tới email
             </div>
-            
-            <div className="mb-3">
-              <label className="form-label fw-semibold" style={{fontSize: 14}}>Mã xác thực (6 số)</label>
-              <input
-                type="text"
-                className="form-control rounded-pill px-3 text-center"
-                placeholder="VD: 123456"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                maxLength={6}
-                required
-                style={{ letterSpacing: 2, fontWeight: "bold" }}
-              />
+            <div style={{ color: "#64748b", fontSize: 14 }}>
+              Sau khi đổi thành công, hệ thống sẽ tự động đưa bạn về trang đăng nhập.
             </div>
-
-            <div className="mb-3">
-              <label className="form-label fw-semibold" style={{fontSize: 14}}>Mật khẩu mới</label>
-              <input
-                type="password"
-                className="form-control rounded-pill px-3"
-                placeholder="Tối thiểu 6 ký tự"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="form-label fw-semibold" style={{fontSize: 14}}>Xác nhận mật khẩu</label>
-              <input
-                type="password"
-                className="form-control rounded-pill px-3"
-                placeholder="Nhập lại mật khẩu mới"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="btn w-100 fw-bold rounded-pill shadow-sm"
-              style={{ backgroundColor: "#ff7a18", color: "#fff", padding: "10px 0" }}
-              disabled={loading}
-            >
-              {loading ? "Đang xử lý..." : "Đổi mật khẩu"}
-            </button>
-          </form>
-        )}
-
-        {!showSuccess && (
-          <div className="text-center mt-4">
-            <button
-              className="btn btn-link fw-bold p-0"
-              style={{ color: "#ff7a18", textDecoration: "none", fontSize: 14 }}
-              onClick={() => navigate("/login")}
-            >
-              Hủy bỏ
-            </button>
           </div>
-        )}
+
+          {error && (
+            <div className="auth-error">
+              <AlertCircle size={18} /> {error}
+            </div>
+          )}
+
+          {showSuccess && (
+            <div
+              style={{
+                background: "#ecfdf5",
+                color: "#047857",
+                padding: 14,
+                borderRadius: 12,
+                fontSize: 14,
+                fontWeight: 600,
+                marginBottom: 20,
+                border: "1px solid #a7f3d0",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <CheckCircle2 size={18} />
+              {message}
+            </div>
+          )}
+
+          {!showSuccess && (
+            <form onSubmit={handleSubmit}>
+              <div className="auth-input-group">
+                <label>Email xác thực</label>
+                <div className="auth-input-wrapper">
+                  <Mail size={18} className="auth-input-icon" />
+                  <input
+                    type="email"
+                    className="auth-input"
+                    placeholder="name@university.edu.vn"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="auth-input-group">
+                <label>Mã xác thực</label>
+                <div className="auth-input-wrapper">
+                  <ShieldCheck size={18} className="auth-input-icon" />
+                  <input
+                    type="text"
+                    className="auth-input"
+                    placeholder="Nhập mã đã nhận qua email"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    required
+                    disabled={loading}
+                    maxLength={12}
+                    style={{ letterSpacing: "0.08em" }}
+                  />
+                </div>
+              </div>
+
+              <div className="auth-input-group">
+                <label>Mật khẩu mới</label>
+                <div className="auth-input-wrapper">
+                  <Lock size={18} className="auth-input-icon" />
+                  <input
+                    type="password"
+                    className="auth-input"
+                    placeholder="Tối thiểu 6 ký tự"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="auth-input-group">
+                <label>Xác nhận mật khẩu mới</label>
+                <div className="auth-input-wrapper">
+                  <Lock size={18} className="auth-input-icon" />
+                  <input
+                    type="password"
+                    className="auth-input"
+                    placeholder="Nhập lại mật khẩu mới"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="auth-btn" disabled={loading}>
+                {loading ? "Đang xử lý..." : "Xác nhận đổi mật khẩu"}
+              </button>
+            </form>
+          )}
+
+          <button
+            type="button"
+            onClick={() => navigate("/login")}
+            style={{
+              marginTop: 18,
+              background: "none",
+              border: "none",
+              color: "#2563eb",
+              cursor: "pointer",
+              fontSize: 14,
+              fontWeight: 600,
+              padding: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <ArrowLeft size={16} />
+            Quay lại đăng nhập
+          </button>
+        </div>
       </div>
     </div>
   );

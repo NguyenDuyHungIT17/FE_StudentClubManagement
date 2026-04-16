@@ -1,4 +1,5 @@
 import { getToken } from '../utils/tokenUtils';
+import { API_BASE_URL, apiRequest } from './api';
 
 class ChatService {
   constructor() {
@@ -8,6 +9,7 @@ class ChatService {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 3000;
+    this.connectionKey = null;
   }
 
   /**
@@ -26,15 +28,18 @@ class ChatService {
           return;
         }
 
-        // Xây dựng URL
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.hostname; // Hoặc 'localhost'
-        const port = 7251; // Port của Backend
-        
-        // URL chuẩn: wss://localhost:7251/ws/chat?access_token=...
-        let url = `${protocol}//${host}:${port}/ws/chat?access_token=${encodeURIComponent(token)}`;
+        if (this.ws?.readyState === WebSocket.OPEN) {
+          this._notifyConnectionStatus(true);
+          resolve(true);
+          return;
+        }
+
+        const origin = API_BASE_URL.replace(/\/api$/, '');
+        const wsBase = origin.replace(/^http/, 'ws');
+        const url = `${wsBase}/ws/chat?access_token=${encodeURIComponent(token)}`;
 
         console.log('🔌 Connecting to:', url);
+        this.connectionKey = clubId ?? 'global';
 
         this.ws = new WebSocket(url);
 
@@ -89,13 +94,11 @@ class ChatService {
    * @param {string} content
    */
   sendGroupMessage(clubId, content) {
-    // 🔥 QUAN TRỌNG: Ép kiểu sang số nguyên (int) vì Backend yêu cầu int
-    const clubIdInt = parseInt(clubId, 10);
-
-    this.send({
-      Type: 'CLUB_GROUP',
-      ClubId: clubIdInt,
-      Content: content
+    return this.createMessage({
+      messageType: 1,
+      content,
+      clubId: parseInt(clubId, 10),
+      recipientId: null,
     });
   }
 
@@ -105,14 +108,11 @@ class ChatService {
    * @param {string} content
    */
   sendPrivateMessage(toUserId, content) {
-    // 🔥 QUAN TRỌNG: Ép kiểu sang số nguyên (int)
-    const toUserIdInt = parseInt(toUserId, 10);
-
-    this.send({
-      Type: 'PRIVATE',
-      ToUserId: toUserIdInt,
-      ClubId: 0, // Giá trị mặc định để không bị null
-      Content: content
+    return this.createMessage({
+      messageType: 2,
+      content,
+      clubId: null,
+      recipientId: parseInt(toUserId, 10),
     });
   }
 
@@ -126,10 +126,18 @@ class ChatService {
     // Format tin nhắn để Leader biết ai gửi
     const formattedContent = `[KHÁCH]\nTên: ${guestName}\nEmail: ${guestEmail}\nNội dung: ${content}`;
 
-    this.send({
-      Type: 'GUEST_TO_LEADER',
-      ClubId: clubIdInt,
-      Content: formattedContent
+    return this.createMessage({
+      messageType: 3,
+      content: formattedContent,
+      clubId: clubIdInt,
+      recipientId: null,
+    });
+  }
+
+  createMessage(payload) {
+    return apiRequest('/Chat/messages', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   }
 
@@ -176,6 +184,35 @@ class ChatService {
       this.ws.close();
       this.ws = null;
     }
+    this.connectionKey = null;
+  }
+
+  getPrivateMessages(userId, pageNumber = 1, pageSize = 50) {
+    return apiRequest('/Chat/messages/private', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId: parseInt(userId, 10),
+        pageNumber,
+        pageSize,
+      }),
+    });
+  }
+
+  getGroupMessages(clubId, pageNumber = 1, pageSize = 50) {
+    return apiRequest('/Chat/messages/group', {
+      method: 'POST',
+      body: JSON.stringify({
+        clubId: parseInt(clubId, 10),
+        pageNumber,
+        pageSize,
+      }),
+    });
+  }
+
+  getConversations(pageNumber = 1, pageSize = 20) {
+    return apiRequest(`/Chat/conversations?pageNumber=${pageNumber}&pageSize=${pageSize}`, {
+      method: 'GET',
+    });
   }
 
   _notifyMessageListeners(message) {

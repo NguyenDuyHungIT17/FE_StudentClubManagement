@@ -63,7 +63,7 @@ export const userService = {
   }),
 
   // Đổi mật khẩu
-  changePassword: (userId, passwordData) => apiRequest(`/Users/${userId}/password`, {
+  changePassword: (userId, passwordData) => apiRequest(`/Users/${userId}/change-password`, {
     method: 'PUT',
     body: JSON.stringify(passwordData),
   }),

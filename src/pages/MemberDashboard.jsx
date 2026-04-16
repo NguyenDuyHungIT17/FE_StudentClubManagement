@@ -136,7 +136,7 @@ const MemberDashboard = () => {
               {activeTab === "profile" && <ProfileSection userProfile={userProfile} onProfileUpdate={fetchUser} />}
               {activeTab === "clubs" && <ClubsSection userId={userProfile?.userId} clubId={userProfile?.clubId} />}
               {activeTab === "events" && <EventsSection clubId={userProfile?.clubId} />}
-              {activeTab === "chat" && <ChatSection userId={userProfile?.userId} />}
+              {activeTab === "chat" && <ChatSection userId={userProfile?.userId} clubId={userProfile?.clubId} currentUserName={userProfile?.fullName} />}
               
               {/* Truyền cả User Profile xuống Feedback để lấy ID */}
               {activeTab === "feedback" && <FeedbackSection userProfile={userProfile} />}
